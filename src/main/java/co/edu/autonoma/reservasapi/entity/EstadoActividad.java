@@ -1,4 +1,4 @@
-package co.edu.autonoma.reservasapi.dto;
+package co.edu.autonoma.reservasapi.entitie;
 
 public enum EstadoActividad
 {
