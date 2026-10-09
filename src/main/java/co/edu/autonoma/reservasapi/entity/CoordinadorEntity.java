@@ -19,7 +19,7 @@ public class CoordinadorEntity
 {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     // Muchos coordinadores pertenecen a una organización
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -47,12 +47,12 @@ public class CoordinadorEntity
         fechaCreacion = LocalDateTime.now();
     }
 
-    public Long getId()
+    public Integer getId()
     {
         return id;
     }
 
-    public void setId(Long id)
+    public void setId(Integer id)
     {
         this.id = id;
     }

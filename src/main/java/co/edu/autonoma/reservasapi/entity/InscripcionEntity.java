@@ -21,7 +21,7 @@ public class InscripcionEntity
 {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     // Muchas inscripciones pertenecen a una actividad
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -53,12 +53,12 @@ public class InscripcionEntity
         fechaInscripcion = LocalDateTime.now();
     }
 
-    public Long getId()
+    public Integer getId()
     {
         return id;
     }
 
-    public void setId(Long id)
+    public void setId(Integer id)
     {
         this.id = id;
     }

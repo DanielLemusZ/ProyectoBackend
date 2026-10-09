@@ -20,7 +20,7 @@ public class AsistenciaEntity
 {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     // RN-04: la asistencia corresponde a una inscripción confirmada.
     // unique = true limita a una sola asistencia por inscripción.
@@ -49,12 +49,12 @@ public class AsistenciaEntity
         fechaRegistro = LocalDateTime.now();
     }
 
-    public Long getId()
+    public Integer getId()
     {
         return id;
     }
 
-    public void setId(Long id)
+    public void setId(Integer id)
     {
         this.id = id;
     }

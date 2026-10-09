@@ -22,7 +22,7 @@ public class ActividadEntity
 {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     // Muchas actividades son publicadas por una organización
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -80,12 +80,12 @@ public class ActividadEntity
         fechaActualizacion = LocalDateTime.now();
     }
 
-    public Long getId()
+    public Integer getId()
     {
         return id;
     }
 
-    public void setId(Long id)
+    public void setId(Integer id)
     {
         this.id = id;
     }
