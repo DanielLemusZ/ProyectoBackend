@@ -1,4 +1,4 @@
-package co.edu.autonoma.reservasapi.entitie;
+package co.edu.autonoma.reservasapi.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
