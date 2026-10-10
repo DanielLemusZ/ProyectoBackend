@@ -1,6 +1,6 @@
 package co.edu.autonoma.reservasapi.controller;
 
-import co.edu.autonoma.reservasapi.dto.EstadoResponse;
+import co.edu.autonoma.reservasapi.entity.EstadoResponse;
 import co.edu.autonoma.reservasapi.service.EstadoServicio;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
