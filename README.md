@@ -25,8 +25,9 @@ Seguimiento de lo implementado y lo pendiente. Actualizar esta tabla con cada av
 | Dependencias de persistencia (JPA + PostgreSQL)    | Hecho     | Agregadas en `pom.xml`.                                              |
 | Modelo relacional de la base de datos              | Hecho     | Ver [Modelo de base de datos relacional](#modelo-de-base-de-datos-relacional). |
 | Entidades JPA con relaciones `@ManyToOne`          | Hecho     | Ver [Implementación de entidades JPA](#implementación-de-entidades-jpa). |
-| Conexión a `DaMano_db` en `application.properties` | Pendiente | Sin ella la aplicación no arranca (JPA exige un datasource).         |
-| Repositorios (`JpaRepository`)                     | Pendiente |                                                                      |
+| Conexión a `DaMano_db` en `application.properties` | Hecho     | La contraseña llega por la variable de entorno `DB_PASSWORD`. Ver [Configuración y ejecución](#configuración-y-ejecución). |
+| Repositorios (`JpaRepository`)                     | Hecho     | Ver [Repositorios Spring Data JPA](#repositorios-spring-data-jpa).   |
+| Query methods y primera consulta real              | Hecho     | Las seis entidades, comprobadas en `config/PersistenciaCheck.java`.  |
 | Servicios con reglas de negocio (RN-01 a RN-06)    | Pendiente |                                                                      |
 | Controladores del contrato HTTP                    | Pendiente | `/api/actividades`, `/api/inscripciones`.                            |
 | DTOs de petición y respuesta                       | Pendiente |                                                                      |
@@ -36,23 +37,50 @@ Seguimiento de lo implementado y lo pendiente. Actualizar esta tabla con cada av
 ```
 src/main/java/co/edu/autonoma/reservasapi/
 ├── ProyectoBackendApplication.java   # Clase principal de Spring Boot
+├── config/
+│   └── PersistenciaCheck.java        # Comprobación temporal de persistencia al arrancar
 ├── controller/
 │   └── EstadoController.java         # GET /api/estado
-├── service/
-│   └── EstadoServicio.java           # Lógica del endpoint de estado
-└── dto/
-    ├── EstadoResponse.java           # Respuesta del endpoint de estado (record)
-    ├── OrganizacionEntity.java       # Entidad JPA → tabla organizacion
-    ├── CoordinadorEntity.java        # Entidad JPA → tabla coordinador
-    ├── VoluntarioEntity.java         # Entidad JPA → tabla voluntario
-    ├── ActividadEntity.java          # Entidad JPA → tabla actividad
-    ├── InscripcionEntity.java        # Entidad JPA → tabla inscripcion
-    ├── AsistenciaEntity.java         # Entidad JPA → tabla asistencia
-    ├── EstadoActividad.java          # Enum: estados de una actividad
-    └── EstadoInscripcion.java        # Enum: estados de una inscripción
+├── dto/
+│   └── EstadoResponse.java           # Respuesta del endpoint de estado (record)
+├── entity/
+│   ├── OrganizacionEntity.java       # Entidad JPA → tabla organizacion
+│   ├── CoordinadorEntity.java        # Entidad JPA → tabla coordinador
+│   ├── VoluntarioEntity.java         # Entidad JPA → tabla voluntario
+│   ├── ActividadEntity.java          # Entidad JPA → tabla actividad
+│   ├── InscripcionEntity.java        # Entidad JPA → tabla inscripcion
+│   ├── AsistenciaEntity.java         # Entidad JPA → tabla asistencia
+│   ├── EstadoActividad.java          # Enum: estados de una actividad
+│   └── EstadoInscripcion.java        # Enum: estados de una inscripción
+├── repository/
+│   ├── OrganizacionRepository.java   # JpaRepository<OrganizacionEntity, Integer>
+│   ├── CoordinadorRepository.java    # JpaRepository<CoordinadorEntity, Integer>
+│   ├── VoluntarioRepository.java     # JpaRepository<VoluntarioEntity, Integer>
+│   ├── ActividadRepository.java      # JpaRepository<ActividadEntity, Integer>
+│   ├── InscripcionRepository.java    # JpaRepository<InscripcionEntity, Integer>
+│   └── AsistenciaRepository.java     # JpaRepository<AsistenciaEntity, Integer>
+└── service/
+    └── EstadoServicio.java           # Lógica del endpoint de estado
 ```
 
-> Las entidades JPA están en el paquete `dto` por decisión del proyecto. Para distinguirlas de los DTOs de petición/respuesta, **toda entidad termina en `Entity`**.
+| Paquete       | Contenido                                                               |
+|---------------|-------------------------------------------------------------------------|
+| `entity/`     | Clases `@Entity` y enums del negocio. Toda entidad termina en `Entity`. |
+| `repository/` | Interfaces que extienden `JpaRepository`.                               |
+| `dto/`        | Solo records de entrada y salida de la API; ninguna clase `@Entity`.    |
+| `config/`     | Configuración y comprobaciones de arranque.                             |
+
+## Configuración y ejecución
+
+La conexión está en `src/main/resources/application.properties`. La contraseña de PostgreSQL no se escribe en el archivo: se lee de la variable de entorno `DB_PASSWORD`.
+
+| Entorno            | Cómo definir la variable                                                          |
+|--------------------|-----------------------------------------------------------------------------------|
+| IntelliJ IDEA      | Run → Edit Configurations… → Environment variables: `DB_PASSWORD=tu_clave`         |
+| Windows PowerShell | `$env:DB_PASSWORD="tu_clave"` y luego `.\mvnw.cmd spring-boot:run`                 |
+| macOS / Linux      | `export DB_PASSWORD=tu_clave` y luego `./mvnw spring-boot:run`                     |
+
+Si la consola muestra `password authentication failed for user "postgres"`, la variable no llegó a la aplicación: revisar el nombre y reiniciar la ejecución.
 
 ## Endpoints implementados
 
@@ -274,7 +302,7 @@ erDiagram
 
 ## Implementación de entidades JPA
 
-Cada tabla del modelo relacional tiene una clase Java anotada con `@Entity` en el paquete `co.edu.autonoma.reservasapi.dto`.
+Cada tabla del modelo relacional tiene una clase Java anotada con `@Entity` en el paquete `co.edu.autonoma.reservasapi.entity`.
 
 ### Clase ↔ tabla
 
@@ -336,7 +364,7 @@ Las fechas de auditoría las asigna la propia entidad mediante callbacks de JPA;
 - Las clases de entidad terminan en `Entity`.
 - Getters y setters escritos a mano (el proyecto no usa Lombok).
 - Llaves de apertura en línea nueva, igual que el resto del código.
-- Identificadores `Long` con `@GeneratedValue(strategy = GenerationType.IDENTITY)`.
+- Identificadores `Integer` con `@GeneratedValue(strategy = GenerationType.IDENTITY)`.
 - Montos decimales con `BigDecimal` (`horas` → `NUMERIC(5,2)`) y fechas con `LocalDateTime`.
 
 ### Restricciones que las entidades no cubren
@@ -349,3 +377,38 @@ Las anotaciones JPA reflejan claves, `NOT NULL`, `UNIQUE` y longitudes, pero **n
 | Índice único parcial `(actividad_id, voluntario_id) WHERE estado = 'CONFIRMADA'` | RN-02  |
 | `CHECK (fecha_fin > fecha_inicio)` y `CHECK (fecha_cierre <= fecha_inicio)` | RN-03  |
 | `CHECK (horas > 0)`                                                 | RN-05  |
+
+---
+
+## Repositorios Spring Data JPA
+
+Cada entidad tiene una interfaz en `co.edu.autonoma.reservasapi.repository` que extiende `JpaRepository<Entidad, Integer>`. El segundo tipo genérico es el tipo del atributo `@Id`. No existe una clase de implementación: Spring Data la crea al arrancar la aplicación.
+
+Todos los repositorios heredan `save`, `findById`, `findAll`, `count`, `existsById` y `deleteById`.
+
+### Query methods
+
+Spring Data genera la consulta a partir del nombre del método, usando los atributos Java de la entidad (no los nombres de columna).
+
+| Repositorio              | Método                                                                     | SQL generado (resumen)                                                           | Uso previsto |
+|--------------------------|----------------------------------------------------------------------------|----------------------------------------------------------------------------------|--------------|
+| `OrganizacionRepository` | `findByNit(String)`                                                        | `select ... from organizacion where nit = ?`                                     | Buscar por identificación tributaria |
+| `CoordinadorRepository`  | `findByEmail(String)`                                                      | `select ... from coordinador where email = ?`                                    | Buscar por correo |
+| `VoluntarioRepository`   | `findByDocumento(String)`                                                  | `select ... from voluntario where documento = ?`                                 | Buscar por documento de identidad |
+| `ActividadRepository`    | `findByEstado(EstadoActividad)`                                            | `select ... from actividad where estado = ?`                                     | Listar actividades por estado |
+| `ActividadRepository`    | `countByEstado(EstadoActividad)`                                           | `select count(id) from actividad where estado = ?`                               | Contar actividades por estado |
+| `ActividadRepository`    | `findByFechaCierreAfter(LocalDateTime)`                                    | `select ... from actividad where fecha_cierre > ?`                               | RN-03: inscripción aún abierta |
+| `InscripcionRepository`  | `findByClaveIdempotencia(String)`                                          | `select ... from inscripcion where clave_idempotencia = ?`                       | RN-06: devolver la inscripción existente |
+| `InscripcionRepository`  | `countByActividadIdAndEstado(Integer, EstadoInscripcion)`                  | `select count(id) from inscripcion where actividad_id = ? and estado = ?`        | RN-01: cupos ocupados |
+| `InscripcionRepository`  | `existsByActividadIdAndVoluntarioIdAndEstado(Integer, Integer, EstadoInscripcion)` | `select id from inscripcion where actividad_id = ? and voluntario_id = ? and estado = ?` | RN-02: inscripción activa duplicada |
+| `AsistenciaRepository`   | `existsByInscripcionId(Integer)`                                           | `select id from asistencia where inscripcion_id = ?`                             | RN-04: una asistencia por inscripción |
+
+En nombres como `countByActividadIdAndEstado`, `ActividadId` recorre la relación `actividad.id`; Hibernate lo resuelve con la columna `actividad_id`, sin join.
+
+### Comprobación de persistencia
+
+`config/PersistenciaCheck.java` es un `CommandLineRunner` temporal que, en cada arranque, ejecuta `save()` en las seis entidades, muestra `count()` y `findAll()` de cada repositorio y el resultado de todos los query methods, junto con el SQL que genera Hibernate (`spring.jpa.show-sql=true`).
+
+- La organización, el coordinador y el voluntario de prueba se buscan por `nit`, `email` y `documento` (columnas únicas) y se reutilizan si ya existen.
+- Cada ejecución agrega una fila nueva en `actividad`, `inscripcion` y `asistencia`.
+- Se retirará cuando existan los endpoints `GET`.
