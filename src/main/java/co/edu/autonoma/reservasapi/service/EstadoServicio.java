@@ -1,6 +1,6 @@
 package co.edu.autonoma.reservasapi.service;
 
-import co.edu.autonoma.reservasapi.entity.EstadoResponse;
+import co.edu.autonoma.reservasapi.dto.EstadoResponse;
 import org.springframework.stereotype.Service;
 
 @Service
