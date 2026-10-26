@@ -12,6 +12,7 @@ Backend para la **Gestión de voluntariado comunitario**: publica actividades, g
 | Spring Boot             | 4.1.1                                      |
 | Spring Web MVC          | API REST                                   |
 | Spring Data JPA         | Persistencia (Hibernate)                   |
+| Jakarta Bean Validation | Validación de los DTOs de petición (`spring-boot-starter-validation`) |
 | PostgreSQL              | Base de datos `DaMano_db`                  |
 | Maven                   | Usar el wrapper incluido: `./mvnw`         |
 
@@ -28,9 +29,11 @@ Seguimiento de lo implementado y lo pendiente. Actualizar esta tabla con cada av
 | Conexión a `DaMano_db` en `application.properties` | Hecho     | La contraseña llega por la variable de entorno `DB_PASSWORD`. Ver [Configuración y ejecución](#configuración-y-ejecución). |
 | Repositorios (`JpaRepository`)                     | Hecho     | Ver [Repositorios Spring Data JPA](#repositorios-spring-data-jpa).   |
 | Query methods y primera consulta real              | Hecho     | Las seis entidades, comprobadas en `config/PersistenciaCheck.java`.  |
+| Contrato de la API REST                            | Hecho     | Ver [Contrato de la API REST](#contrato-de-la-api-rest).             |
+| DTOs de petición y respuesta                       | Hecho     | Ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta).   |
 | Servicios con reglas de negocio (RN-01 a RN-06)    | Pendiente |                                                                      |
-| Controladores del contrato HTTP                    | Pendiente | `/api/actividades`, `/api/inscripciones`.                            |
-| DTOs de petición y respuesta                       | Pendiente |                                                                      |
+| Controladores del contrato HTTP                    | Pendiente | Los endpoints del [resumen de endpoints](#resumen-de-endpoints), salvo `GET /api/estado`. |
+| Manejo de errores (400, 404, 409)                  | Pendiente | Ver [Códigos de estado HTTP](#códigos-de-estado-http).               |
 
 ## Estructura del proyecto
 
@@ -42,7 +45,25 @@ src/main/java/co/edu/autonoma/reservasapi/
 ├── controller/
 │   └── EstadoController.java         # GET /api/estado
 ├── dto/
-│   └── EstadoResponse.java           # Respuesta del endpoint de estado (record)
+│   ├── OrganizacionRequest.java                # record: POST y PUT de organizaciones
+│   ├── CoordinadorRequest.java                 # record: POST de coordinadores
+│   ├── CoordinadorActualizacionRequest.java    # record: PUT de coordinadores
+│   ├── VoluntarioRequest.java                  # record: POST y PUT de voluntarios
+│   ├── ActividadRequest.java                   # record: POST de actividades
+│   ├── ActividadActualizacionRequest.java      # record: PUT de actividades
+│   ├── ActividadEstadoRequest.java             # record: PATCH del estado de una actividad
+│   ├── InscripcionRequest.java                 # record: POST de inscripciones
+│   ├── AsistenciaRequest.java                  # record: PATCH de asistencia de una inscripción
+│   ├── AsistenciaActualizacionRequest.java     # record: PUT de asistencias
+│   ├── EstadoResponse.java                     # clase: respuesta de GET /api/estado
+│   ├── OrganizacionResponse.java               # clase: respuesta de organizaciones
+│   ├── ParticipacionOrganizacionResponse.java  # clase: resumen de participación de una organización
+│   ├── ParticipacionActividadResponse.java     # clase: participación por actividad
+│   ├── CoordinadorResponse.java                # clase: respuesta de coordinadores
+│   ├── VoluntarioResponse.java                 # clase: respuesta de voluntarios
+│   ├── ActividadResponse.java                  # clase: respuesta de actividades, con cupos
+│   ├── InscripcionResponse.java                # clase: respuesta de inscripciones
+│   └── AsistenciaResponse.java                 # clase: respuesta de asistencias
 ├── entity/
 │   ├── OrganizacionEntity.java       # Entidad JPA → tabla organizacion
 │   ├── CoordinadorEntity.java        # Entidad JPA → tabla coordinador
@@ -67,7 +88,7 @@ src/main/java/co/edu/autonoma/reservasapi/
 |---------------|-------------------------------------------------------------------------|
 | `entity/`     | Clases `@Entity` y enums del negocio. Toda entidad termina en `Entity`. |
 | `repository/` | Interfaces que extienden `JpaRepository`.                               |
-| `dto/`        | Solo records de entrada y salida de la API; ninguna clase `@Entity`.    |
+| `dto/`        | Entrada y salida de la API: records `Request` y clases `Response`; ninguna clase `@Entity`. |
 | `config/`     | Configuración y comprobaciones de arranque.                             |
 
 ## Configuración y ejecución
@@ -87,6 +108,85 @@ Si la consola muestra `password authentication failed for user "postgres"`, la v
 | Verbo | Ruta          | Descripción                          | Respuesta de ejemplo                                   |
 |-------|---------------|--------------------------------------|--------------------------------------------------------|
 | GET   | `/api/estado` | Indica si la API está disponible.    | `{"servicio": "DaMano-api", "estado": "disponible"}`   |
+
+## Contrato de la API REST
+
+Diseño de las peticiones HTTP de la API. Solo `GET /api/estado` está implementado; los demás endpoints están pendientes. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
+
+### Resumen de endpoints
+
+La columna Estado indica si el endpoint ya está implementado (controlador y servicio). Actualizarla a medida que se implementa cada uno.
+
+| #  | Verbo    | Ruta                                                 | Request                            | Response                              | Éxito | Estado    |
+|----|----------|------------------------------------------------------|------------------------------------|---------------------------------------|-------|-----------|
+| 1  | `GET`    | `/api/estado`                                        | —                                  | `EstadoResponse`                      | 200   | Hecho     |
+| 2  | `GET`    | `/api/organizaciones`                                | —                                  | `List<OrganizacionResponse>`          | 200   | Pendiente |
+| 3  | `GET`    | `/api/organizaciones/{id}`                           | —                                  | `OrganizacionResponse`                | 200   | Pendiente |
+| 4  | `GET`    | `/api/organizaciones/nit/{nit}`                      | —                                  | `OrganizacionResponse`                | 200   | Pendiente |
+| 5  | `POST`   | `/api/organizaciones`                                | `OrganizacionRequest`              | `OrganizacionResponse`                | 201   | Pendiente |
+| 6  | `PUT`    | `/api/organizaciones/{id}`                           | `OrganizacionRequest`              | `OrganizacionResponse`                | 200   | Pendiente |
+| 7  | `DELETE` | `/api/organizaciones/{id}`                           | —                                  | —                                     | 204   | Pendiente |
+| 8  | `GET`    | `/api/organizaciones/{id}/coordinadores`             | —                                  | `List<CoordinadorResponse>`           | 200   | Pendiente |
+| 9  | `GET`    | `/api/organizaciones/{id}/actividades`               | —                                  | `List<ActividadResponse>`             | 200   | Pendiente |
+| 10 | `GET`    | `/api/organizaciones/{id}/participacion`             | —                                  | `ParticipacionOrganizacionResponse`   | 200   | Pendiente |
+| 11 | `GET`    | `/api/coordinadores`                                 | —                                  | `List<CoordinadorResponse>`           | 200   | Pendiente |
+| 12 | `GET`    | `/api/coordinadores/{id}`                            | —                                  | `CoordinadorResponse`                 | 200   | Pendiente |
+| 13 | `GET`    | `/api/coordinadores/email/{email}`                   | —                                  | `CoordinadorResponse`                 | 200   | Pendiente |
+| 14 | `POST`   | `/api/coordinadores`                                 | `CoordinadorRequest`               | `CoordinadorResponse`                 | 201   | Pendiente |
+| 15 | `PUT`    | `/api/coordinadores/{id}`                            | `CoordinadorActualizacionRequest`  | `CoordinadorResponse`                 | 200   | Pendiente |
+| 16 | `DELETE` | `/api/coordinadores/{id}`                            | —                                  | —                                     | 204   | Pendiente |
+| 17 | `GET`    | `/api/coordinadores/{id}/actividades`                | —                                  | `List<ActividadResponse>`             | 200   | Pendiente |
+| 18 | `GET`    | `/api/voluntarios`                                   | —                                  | `List<VoluntarioResponse>`            | 200   | Pendiente |
+| 19 | `GET`    | `/api/voluntarios/{id}`                              | —                                  | `VoluntarioResponse`                  | 200   | Pendiente |
+| 20 | `GET`    | `/api/voluntarios/documento/{documento}`             | —                                  | `VoluntarioResponse`                  | 200   | Pendiente |
+| 21 | `POST`   | `/api/voluntarios`                                   | `VoluntarioRequest`                | `VoluntarioResponse`                  | 201   | Pendiente |
+| 22 | `PUT`    | `/api/voluntarios/{id}`                              | `VoluntarioRequest`                | `VoluntarioResponse`                  | 200   | Pendiente |
+| 23 | `DELETE` | `/api/voluntarios/{id}`                              | —                                  | —                                     | 204   | Pendiente |
+| 24 | `GET`    | `/api/voluntarios/{id}/inscripciones?estado={estado}`| —                                  | `List<InscripcionResponse>`           | 200   | Pendiente |
+| 25 | `GET`    | `/api/voluntarios/{id}/asistencias`                  | —                                  | `List<AsistenciaResponse>`            | 200   | Pendiente |
+| 26 | `GET`    | `/api/actividades?estado={estado}`                   | —                                  | `List<ActividadResponse>`             | 200   | Pendiente |
+| 27 | `GET`    | `/api/actividades/{id}`                              | —                                  | `ActividadResponse`                   | 200   | Pendiente |
+| 28 | `POST`   | `/api/actividades`                                   | `ActividadRequest`                 | `ActividadResponse`                   | 201   | Pendiente |
+| 29 | `PUT`    | `/api/actividades/{id}`                              | `ActividadActualizacionRequest`    | `ActividadResponse`                   | 200   | Pendiente |
+| 30 | `PATCH`  | `/api/actividades/{id}/estado`                       | `ActividadEstadoRequest`           | `ActividadResponse`                   | 200   | Pendiente |
+| 31 | `DELETE` | `/api/actividades/{id}`                              | —                                  | `ActividadResponse`                   | 200   | Pendiente |
+| 32 | `GET`    | `/api/actividades/{id}/inscripciones?estado={estado}`| —                                  | `List<InscripcionResponse>`           | 200   | Pendiente |
+| 33 | `GET`    | `/api/actividades/{id}/asistencias`                  | —                                  | `List<AsistenciaResponse>`            | 200   | Pendiente |
+| 34 | `GET`    | `/api/inscripciones?estado={estado}`                 | —                                  | `List<InscripcionResponse>`           | 200   | Pendiente |
+| 35 | `GET`    | `/api/inscripciones/{id}`                            | —                                  | `InscripcionResponse`                 | 200   | Pendiente |
+| 36 | `POST`   | `/api/inscripciones`                                 | `InscripcionRequest`               | `InscripcionResponse`                 | 201 (200 si la clave ya existe) | Pendiente |
+| 37 | `PATCH`  | `/api/inscripciones/{id}/asistencia`                 | `AsistenciaRequest`                | `AsistenciaResponse`                  | 200   | Pendiente |
+| 38 | `DELETE` | `/api/inscripciones/{id}`                            | —                                  | `InscripcionResponse`                 | 200   | Pendiente |
+| 39 | `GET`    | `/api/asistencias`                                   | —                                  | `List<AsistenciaResponse>`            | 200   | Pendiente |
+| 40 | `GET`    | `/api/asistencias/{id}`                              | —                                  | `AsistenciaResponse`                  | 200   | Pendiente |
+| 41 | `PUT`    | `/api/asistencias/{id}`                              | `AsistenciaActualizacionRequest`   | `AsistenciaResponse`                  | 200   | Pendiente |
+| 42 | `DELETE` | `/api/asistencias/{id}`                              | —                                  | —                                     | 204   | Pendiente |
+
+El parámetro `?estado=` es opcional en todas las rutas donde aparece. Si se omite, se devuelven todos los registros, salvo en `GET /api/actividades`, que sin filtro devuelve solo las actividades abiertas a inscripción.
+
+### Códigos de estado HTTP
+
+| Código             | Uso                                                                                                           |
+|--------------------|---------------------------------------------------------------------------------------------------------------|
+| `200 OK`           | Consulta, actualización, cancelación lógica o registro de asistencia (`PATCH`) exitoso.                       |
+| `201 Created`      | Recurso creado. Incluye la cabecera `Location` con la ruta del nuevo recurso (por ejemplo `/api/voluntarios/7`). |
+| `204 No Content`   | Eliminación física exitosa. Sin cuerpo.                                                                       |
+| `400 Bad Request`  | Cuerpo inválido: validación de campos, fechas incoherentes, JSON mal formado o valor de enum desconocido.     |
+| `404 Not Found`    | El recurso de la ruta, o un id referenciado en el cuerpo, no existe.                                          |
+| `409 Conflict`     | Se viola una regla de negocio (RN-01 a RN-04, RN-06), un valor único, una dependencia que impide eliminar o el momento en que se permite la operación (editar una actividad con inscritos, cancelar una inscripción después del cierre). |
+
+### Contrato HTTP mínimo del enunciado
+
+El enunciado del proyecto exige estas seis operaciones. Todas están incluidas en el [resumen de endpoints](#resumen-de-endpoints).
+
+| Verbo    | Ruta                                  | Responsabilidad según el enunciado                  | Cómo se cumple                                                             | Estado    |
+|----------|---------------------------------------|-----------------------------------------------------|----------------------------------------------------------------------------|-----------|
+| `GET`    | `/api/actividades`                    | Consulta abiertas.                                  | Sin filtro devuelve las actividades `ABIERTA` con `fechaCierre` futura.    | Pendiente |
+| `GET`    | `/api/actividades/{id}/inscripciones` | Consulta del coordinador.                           | Inscripciones de la actividad, con filtro opcional `?estado=`.             | Pendiente |
+| `POST`   | `/api/inscripciones`                  | Inscribe sin duplicar y controla cupo.              | Aplica RN-06, RN-03, RN-02 y RN-01, en ese orden.                          | Pendiente |
+| `PUT`    | `/api/actividades/{id}`               | Reemplaza actividad antes de recibir inscripciones. | Responde 409 si la actividad ya tiene inscripciones `CONFIRMADA`.          | Pendiente |
+| `PATCH`  | `/api/inscripciones/{id}/asistencia`  | Registra asistencia.                                | Crea la asistencia de la inscripción aplicando RN-04 y RN-05.              | Pendiente |
+| `DELETE` | `/api/inscripciones/{id}`             | Cancela/elimina inscripción antes del cierre.       | Cancelación lógica; responde 409 si ya pasó `fechaCierre`.                 | Pendiente |
 
 ---
 
@@ -291,12 +391,12 @@ erDiagram
 |-------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | RN-01 | `actividad.cupo_maximo` con `CHECK > 0`. El servicio cuenta las inscripciones `CONFIRMADA` antes de insertar, bloqueando la actividad (`SELECT ... FOR UPDATE`). |
 | RN-02 | Índice único parcial `(actividad_id, voluntario_id) WHERE estado = 'CONFIRMADA'`: solo puede existir una inscripción activa por voluntario y actividad.          |
-| RN-03 | `actividad.fecha_cierre` y `actividad.estado`. El servicio rechaza la inscripción si `NOW() > fecha_cierre` o si el cupo está completo (pasa a `CERRADA`).       |
+| RN-03 | `actividad.fecha_cierre` y `actividad.estado`. El servicio rechaza la inscripción si `NOW() > fecha_cierre` o si el cupo está completo (pasa a `CERRADA`). Al consultar actividades, las que siguen `ABIERTA` con `fecha_cierre` vencida pasan a `CERRADA`. |
 | RN-04 | `asistencia.inscripcion_id` es FK y único. El servicio valida que la inscripción esté en estado `CONFIRMADA` antes de registrar.                                 |
 | RN-05 | `asistencia.horas` con `CHECK (horas > 0)`.                                                                                                                      |
 | RN-06 | `inscripcion.clave_idempotencia` única: si se repite la petición con la misma clave, se devuelve la inscripción ya creada en lugar de crear otra.               |
 
-> **Trazabilidad:** las inscripciones no se borran físicamente; `DELETE /api/inscripciones/{id}` cambia el estado a `CANCELADA` y guarda `fecha_cancelacion`.
+> **Trazabilidad:** las inscripciones no se borran físicamente; `DELETE /api/inscripciones/{id}` cambia el estado a `CANCELADA` y guarda `fecha_cancelacion`. Solo se permite antes de `fecha_cierre` de la actividad.
 
 ---
 
@@ -412,3 +512,83 @@ En nombres como `countByActividadIdAndEstado`, `ActividadId` recorre la relació
 - La organización, el coordinador y el voluntario de prueba se buscan por `nit`, `email` y `documento` (columnas únicas) y se reutilizan si ya existen.
 - Cada ejecución agrega una fila nueva en `actividad`, `inscripcion` y `asistencia`.
 - Se retirará cuando existan los endpoints `GET`.
+
+---
+
+## DTOs de petición y respuesta
+
+Los DTOs están en `co.edu.autonoma.reservasapi.dto`. Los controladores reciben y devuelven DTOs, nunca entidades.
+
+| Tipo      | Sufijo     | Implementación                                                                                     |
+|-----------|------------|----------------------------------------------------------------------------------------------------|
+| Petición  | `Request`  | `record` inmutable. Cada componente lleva sus anotaciones de `jakarta.validation.constraints`.      |
+| Respuesta | `Response` | Clase con campos privados, constructor vacío, constructor con todos los campos, getters y setters. Jackson genera el JSON a partir de los getters. |
+
+### Clases de petición (`Request`)
+
+| Record                            | Endpoint                                         | Campos                                                                                                  |
+|-----------------------------------|--------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| `OrganizacionRequest`             | `POST /api/organizaciones`, `PUT /api/organizaciones/{id}` | `nombre`, `nit`, `email`, `telefono`                                                          |
+| `CoordinadorRequest`              | `POST /api/coordinadores`                        | `organizacionId`, `nombre`, `apellido`, `email`, `telefono`                                             |
+| `CoordinadorActualizacionRequest` | `PUT /api/coordinadores/{id}`                    | Igual que `CoordinadorRequest` sin `organizacionId`: un coordinador no cambia de organización.          |
+| `VoluntarioRequest`               | `POST /api/voluntarios`, `PUT /api/voluntarios/{id}` | `documento`, `nombre`, `apellido`, `email`, `telefono`                                              |
+| `ActividadRequest`                | `POST /api/actividades`                          | `coordinadorId`, `titulo`, `descripcion`, `ubicacion`, `fechaInicio`, `fechaFin`, `fechaCierre`, `cupoMaximo` |
+| `ActividadActualizacionRequest`   | `PUT /api/actividades/{id}`                      | Igual que `ActividadRequest` sin `coordinadorId` y sin exigir fechas futuras. Solo se acepta mientras la actividad no tenga inscripciones `CONFIRMADA`. |
+| `ActividadEstadoRequest`          | `PATCH /api/actividades/{id}/estado`             | `estado` (`EstadoActividad`)                                                                            |
+| `InscripcionRequest`              | `POST /api/inscripciones`                        | `actividadId`, `voluntarioId`, `claveIdempotencia` (RN-06)                                              |
+| `AsistenciaRequest`               | `PATCH /api/inscripciones/{id}/asistencia`       | `coordinadorId`, `horas` (RN-05), `observaciones`. La inscripción va en la ruta.                        |
+| `AsistenciaActualizacionRequest`  | `PUT /api/asistencias/{id}`                      | `horas`, `observaciones`                                                                                |
+
+Ningún `Request` incluye el `id` del recurso (va en la ruta) ni los campos de auditoría (`fechaCreacion`, `fechaInscripcion`, etc.), que asigna el servidor.
+
+### Validaciones
+
+| Anotación                                       | Qué valida                                                         | Dónde se usa                                              |
+|-------------------------------------------------|--------------------------------------------------------------------|-----------------------------------------------------------|
+| `@NotNull`                                      | El campo no puede ser `null`.                                      | Ids referenciados, fechas, `cupoMaximo`, `estado`, `horas` |
+| `@NotBlank`                                     | Texto no nulo y con al menos un carácter distinto de espacio.      | Nombres, documentos, correos, títulos, `claveIdempotencia` |
+| `@Size(max = n)`                                | Longitud máxima, igual al `VARCHAR(n)` de la columna.              | Todos los campos de texto con límite                      |
+| `@Email`                                        | Formato de correo electrónico.                                     | `email`                                                   |
+| `@Future`                                       | Fecha posterior al momento actual.                                 | `fechaInicio` y `fechaCierre` de `ActividadRequest`       |
+| `@Positive`                                     | Número mayor que cero (RN-01).                                     | `cupoMaximo`                                              |
+| `@DecimalMin(value = "0.0", inclusive = false)` | Decimal mayor que cero (RN-05).                                    | `horas`                                                   |
+| `@Digits(integer = 3, fraction = 2)`            | Hasta 3 enteros y 2 decimales, como la columna `NUMERIC(5,2)`.     | `horas`                                                   |
+
+Las anotaciones solo se evalúan si el parámetro del controlador lleva `@Valid`. Si alguna falla, Spring lanza `MethodArgumentNotValidException` y la respuesta es `400 Bad Request`:
+
+```java
+@PostMapping
+public ResponseEntity<ActividadResponse> crear(@Valid @RequestBody ActividadRequest request)
+```
+
+Lo que no se puede expresar con anotaciones de un solo campo lo valida el servicio:
+
+| Validación                                                    | Respuesta |
+|---------------------------------------------------------------|-----------|
+| `fechaFin > fechaInicio` y `fechaCierre <= fechaInicio` (RN-03) | 400       |
+| Existencia de los ids referenciados en el cuerpo              | 404       |
+| Valores únicos (`nit`, `email`, `documento`) y reglas RN-01 a RN-04 y RN-06 | 409 |
+| Momento de la operación: `PUT` de una actividad con inscripciones `CONFIRMADA`, cancelación de una inscripción después de `fechaCierre` | 409 |
+
+### Clases de respuesta (`Response`)
+
+| Clase                               | Endpoints                                                                  | Campos que no están en la entidad                                                                                  |
+|-------------------------------------|----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `EstadoResponse`                    | `GET /api/estado`                                                          | —                                                                                                                  |
+| `OrganizacionResponse`              | `/api/organizaciones`                                                      | —                                                                                                                  |
+| `ParticipacionOrganizacionResponse` | `GET /api/organizaciones/{id}/participacion`                               | Totales de actividades, inscripciones `CONFIRMADA`, asistencias y horas; lista de `ParticipacionActividadResponse`. |
+| `ParticipacionActividadResponse`    | Dentro de `ParticipacionOrganizacionResponse`                              | `inscripcionesConfirmadas`, `asistencias` y `horas` de cada actividad.                                             |
+| `CoordinadorResponse`               | `/api/coordinadores`, `/api/organizaciones/{id}/coordinadores`             | `organizacionId` y `organizacionNombre`, tomados de la relación `organizacion`.                                    |
+| `VoluntarioResponse`                | `/api/voluntarios`                                                         | —                                                                                                                  |
+| `ActividadResponse`                 | `/api/actividades`, `/api/organizaciones/{id}/actividades`, `/api/coordinadores/{id}/actividades` | `organizacionNombre`, `coordinadorNombre`, `cuposOcupados` (`countByActividadIdAndEstado(id, CONFIRMADA)`) y `cuposDisponibles` (`cupoMaximo - cuposOcupados`). |
+| `InscripcionResponse`               | `/api/inscripciones`, `/api/actividades/{id}/inscripciones`, `/api/voluntarios/{id}/inscripciones` | `actividadTitulo` y `voluntarioNombre`.                                                     |
+| `AsistenciaResponse`                | `/api/asistencias`, `PATCH /api/inscripciones/{id}/asistencia`, `/api/actividades/{id}/asistencias`, `/api/voluntarios/{id}/asistencias` | `actividadId`, `actividadTitulo`, `voluntarioId` y `voluntarioNombre` (a través de la inscripción), y `coordinadorNombre`. |
+
+- Los campos `...Nombre` de coordinadores y voluntarios se forman con nombre y apellido: `"Laura Gómez"`.
+- Los conteos (`cuposOcupados`, `asistencias`, `totalActividades`, etc.) son `long` primitivo: valen `0` cuando no hay registros y nunca llegan como `null`.
+- `fechaCancelacion` de `InscripcionResponse` es `null` mientras la inscripción esté `CONFIRMADA`.
+- Los enums `EstadoActividad` y `EstadoInscripcion` del paquete `entity` se reutilizan en los DTOs y viajan como texto (`"ABIERTA"`).
+
+### Mapeo entidad a respuesta
+
+La conversión de entidad a `Response` se hace en el servicio, dentro de un método `@Transactional`. Las relaciones `@ManyToOne` son `LAZY`, así que leer `actividad.getCoordinador().getNombre()` fuera de una transacción lanza `LazyInitializationException` (ver [Relaciones `@ManyToOne`](#relaciones-manytoone)).
