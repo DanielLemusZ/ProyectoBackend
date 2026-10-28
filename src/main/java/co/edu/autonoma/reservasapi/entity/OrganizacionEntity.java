@@ -7,11 +7,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "organizacion")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OrganizacionEntity
 {
     @Id
@@ -33,64 +38,26 @@ public class OrganizacionEntity
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
+    public OrganizacionEntity(String nombre, String nit, String email, String telefono)
+    {
+        this.nombre = nombre;
+        this.nit = nit;
+        this.email = email;
+        this.telefono = telefono;
+    }
+
+    // PUT reemplaza todos los campos editables
+    public void actualizar(String nombre, String nit, String email, String telefono)
+    {
+        this.nombre = nombre;
+        this.nit = nit;
+        this.email = email;
+        this.telefono = telefono;
+    }
+
     @PrePersist
     protected void alCrear()
     {
         fechaCreacion = LocalDateTime.now();
-    }
-
-    public Integer getId()
-    {
-        return id;
-    }
-
-    public void setId(Integer id)
-    {
-        this.id = id;
-    }
-
-    public String getNombre()
-    {
-        return nombre;
-    }
-
-    public void setNombre(String nombre)
-    {
-        this.nombre = nombre;
-    }
-
-    public String getNit()
-    {
-        return nit;
-    }
-
-    public void setNit(String nit)
-    {
-        this.nit = nit;
-    }
-
-    public String getEmail()
-    {
-        return email;
-    }
-
-    public void setEmail(String email)
-    {
-        this.email = email;
-    }
-
-    public String getTelefono()
-    {
-        return telefono;
-    }
-
-    public void setTelefono(String telefono)
-    {
-        this.telefono = telefono;
-    }
-
-    public LocalDateTime getFechaCreacion()
-    {
-        return fechaCreacion;
     }
 }

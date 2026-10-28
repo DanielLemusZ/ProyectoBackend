@@ -13,11 +13,16 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "actividad")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ActividadEntity
 {
     @Id
@@ -67,6 +72,27 @@ public class ActividadEntity
     @Column(name = "fecha_actualizacion", nullable = false)
     private LocalDateTime fechaActualizacion;
 
+    // La organización se toma del coordinador, para que no puedan quedar inconsistentes
+    public ActividadEntity(CoordinadorEntity coordinador,
+                           String titulo,
+                           String descripcion,
+                           String ubicacion,
+                           LocalDateTime fechaInicio,
+                           LocalDateTime fechaFin,
+                           LocalDateTime fechaCierre,
+                           Integer cupoMaximo)
+    {
+        this.organizacion = coordinador.getOrganizacion();
+        this.coordinador = coordinador;
+        this.titulo = titulo;
+        this.descripcion = descripcion;
+        this.ubicacion = ubicacion;
+        this.fechaInicio = fechaInicio;
+        this.fechaFin = fechaFin;
+        this.fechaCierre = fechaCierre;
+        this.cupoMaximo = cupoMaximo;
+    }
+
     @PrePersist
     protected void alCrear()
     {
@@ -78,125 +104,5 @@ public class ActividadEntity
     protected void alActualizar()
     {
         fechaActualizacion = LocalDateTime.now();
-    }
-
-    public Integer getId()
-    {
-        return id;
-    }
-
-    public void setId(Integer id)
-    {
-        this.id = id;
-    }
-
-    public OrganizacionEntity getOrganizacion()
-    {
-        return organizacion;
-    }
-
-    public void setOrganizacion(OrganizacionEntity organizacion)
-    {
-        this.organizacion = organizacion;
-    }
-
-    public CoordinadorEntity getCoordinador()
-    {
-        return coordinador;
-    }
-
-    public void setCoordinador(CoordinadorEntity coordinador)
-    {
-        this.coordinador = coordinador;
-    }
-
-    public String getTitulo()
-    {
-        return titulo;
-    }
-
-    public void setTitulo(String titulo)
-    {
-        this.titulo = titulo;
-    }
-
-    public String getDescripcion()
-    {
-        return descripcion;
-    }
-
-    public void setDescripcion(String descripcion)
-    {
-        this.descripcion = descripcion;
-    }
-
-    public String getUbicacion()
-    {
-        return ubicacion;
-    }
-
-    public void setUbicacion(String ubicacion)
-    {
-        this.ubicacion = ubicacion;
-    }
-
-    public LocalDateTime getFechaInicio()
-    {
-        return fechaInicio;
-    }
-
-    public void setFechaInicio(LocalDateTime fechaInicio)
-    {
-        this.fechaInicio = fechaInicio;
-    }
-
-    public LocalDateTime getFechaFin()
-    {
-        return fechaFin;
-    }
-
-    public void setFechaFin(LocalDateTime fechaFin)
-    {
-        this.fechaFin = fechaFin;
-    }
-
-    public LocalDateTime getFechaCierre()
-    {
-        return fechaCierre;
-    }
-
-    public void setFechaCierre(LocalDateTime fechaCierre)
-    {
-        this.fechaCierre = fechaCierre;
-    }
-
-    public Integer getCupoMaximo()
-    {
-        return cupoMaximo;
-    }
-
-    public void setCupoMaximo(Integer cupoMaximo)
-    {
-        this.cupoMaximo = cupoMaximo;
-    }
-
-    public EstadoActividad getEstado()
-    {
-        return estado;
-    }
-
-    public void setEstado(EstadoActividad estado)
-    {
-        this.estado = estado;
-    }
-
-    public LocalDateTime getFechaCreacion()
-    {
-        return fechaCreacion;
-    }
-
-    public LocalDateTime getFechaActualizacion()
-    {
-        return fechaActualizacion;
     }
 }

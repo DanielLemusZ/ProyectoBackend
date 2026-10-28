@@ -14,6 +14,7 @@ Backend para la **Gestión de voluntariado comunitario**: publica actividades, g
 | Spring Data JPA         | Persistencia (Hibernate)                   |
 | Jakarta Bean Validation | Validación de los DTOs de petición (`spring-boot-starter-validation`) |
 | PostgreSQL              | Base de datos `DaMano_db`                  |
+| Lombok                  | 1.18.46 (versión administrada por Spring Boot). Genera getters y constructores. |
 | Maven                   | Usar el wrapper incluido: `./mvnw`         |
 
 ## Estado del proyecto
@@ -31,9 +32,10 @@ Seguimiento de lo implementado y lo pendiente. Actualizar esta tabla con cada av
 | Query methods y primera consulta real              | Hecho     | Las seis entidades, comprobadas en `config/PersistenciaCheck.java`.  |
 | Contrato de la API REST                            | Hecho     | Ver [Contrato de la API REST](#contrato-de-la-api-rest).             |
 | DTOs de petición y respuesta                       | Hecho     | Ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta).   |
-| Servicios con reglas de negocio (RN-01 a RN-06)    | Pendiente |                                                                      |
-| Controladores del contrato HTTP                    | Pendiente | Los endpoints del [resumen de endpoints](#resumen-de-endpoints), salvo `GET /api/estado`. |
-| Manejo de errores (400, 404, 409)                  | Pendiente | Ver [Códigos de estado HTTP](#códigos-de-estado-http).               |
+| Lombok en entidades, `Response` e inyección de dependencias | Hecho | Entidades sin setters, `Response` inmutables y `@RequiredArgsConstructor` en servicios, controladores y `config/`. Ver [Convenciones del código](#convenciones-del-código). |
+| Servicios con reglas de negocio (RN-01 a RN-06)    | En progreso | `OrganizacionServicio` hecho. Ver [Servicios y controladores](#servicios-y-controladores). |
+| Controladores del contrato HTTP                    | En progreso | `OrganizacionController` hecho (endpoints 2 a 7). Faltan los demás del [resumen de endpoints](#resumen-de-endpoints). |
+| Manejo de errores (400, 404, 409)                  | Pendiente | Los códigos ya se responden; falta el formato común del cuerpo de error. Ver [Códigos de estado HTTP](#códigos-de-estado-http). |
 
 ## Estructura del proyecto
 
@@ -43,7 +45,8 @@ src/main/java/co/edu/autonoma/reservasapi/
 ├── config/
 │   └── PersistenciaCheck.java        # Comprobación temporal de persistencia al arrancar
 ├── controller/
-│   └── EstadoController.java         # GET /api/estado
+│   ├── EstadoController.java         # GET /api/estado
+│   └── OrganizacionController.java   # /api/organizaciones
 ├── dto/
 │   ├── OrganizacionRequest.java                # record: POST y PUT de organizaciones
 │   ├── CoordinadorRequest.java                 # record: POST de coordinadores
@@ -81,7 +84,8 @@ src/main/java/co/edu/autonoma/reservasapi/
 │   ├── InscripcionRepository.java    # JpaRepository<InscripcionEntity, Integer>
 │   └── AsistenciaRepository.java     # JpaRepository<AsistenciaEntity, Integer>
 └── service/
-    └── EstadoServicio.java           # Lógica del endpoint de estado
+    ├── EstadoServicio.java           # Lógica del endpoint de estado
+    └── OrganizacionServicio.java     # Reglas y mapeo de organizaciones
 ```
 
 | Paquete       | Contenido                                                               |
@@ -89,6 +93,8 @@ src/main/java/co/edu/autonoma/reservasapi/
 | `entity/`     | Clases `@Entity` y enums del negocio. Toda entidad termina en `Entity`. |
 | `repository/` | Interfaces que extienden `JpaRepository`.                               |
 | `dto/`        | Entrada y salida de la API: records `Request` y clases `Response`; ninguna clase `@Entity`. |
+| `service/`    | Clases `@Service` terminadas en `Servicio`: reglas de negocio y conversión entidad a `Response`. |
+| `controller/` | Clases `@RestController`: reciben DTOs, delegan en el servicio y devuelven el código HTTP. |
 | `config/`     | Configuración y comprobaciones de arranque.                             |
 
 ## Configuración y ejecución
@@ -101,17 +107,25 @@ La conexión está en `src/main/resources/application.properties`. La contraseñ
 | Windows PowerShell | `$env:DB_PASSWORD="tu_clave"` y luego `.\mvnw.cmd spring-boot:run`                 |
 | macOS / Linux      | `export DB_PASSWORD=tu_clave` y luego `./mvnw spring-boot:run`                     |
 
+Lombok está declarado como dependencia `<optional>true</optional>` y excluido del jar en el `spring-boot-maven-plugin`, porque solo se usa al compilar. Se ejecuta como procesador de anotaciones, declarado en `annotationProcessorPaths` del `maven-compiler-plugin`. Desde el JDK 23, `javac` no lo ejecuta si solo está en el classpath. En IntelliJ IDEA debe estar activado Settings → Build, Execution, Deployment → Compiler → Annotation Processors → Enable annotation processing. Los avisos `sun.misc.Unsafe ... lombok.permit.Permit` que aparecen al compilar con JDK 25 son de Lombok y no impiden la compilación.
+
 Si la consola muestra `password authentication failed for user "postgres"`, la variable no llegó a la aplicación: revisar el nombre y reiniciar la ejecución.
 
 ## Endpoints implementados
 
-| Verbo | Ruta          | Descripción                          | Respuesta de ejemplo                                   |
-|-------|---------------|--------------------------------------|--------------------------------------------------------|
-| GET   | `/api/estado` | Indica si la API está disponible.    | `{"servicio": "DaMano-api", "estado": "disponible"}`   |
+| Verbo  | Ruta                            | Descripción                                                  | Respuesta de ejemplo                                   |
+|--------|---------------------------------|--------------------------------------------------------------|--------------------------------------------------------|
+| GET    | `/api/estado`                   | Indica si la API está disponible.                            | `{"servicio": "DaMano-api", "estado": "disponible"}`   |
+| GET    | `/api/organizaciones`           | Lista todas las organizaciones.                              | `[{"id": 1, "nombre": "...", "nit": "...", ...}]`      |
+| GET    | `/api/organizaciones/{id}`      | Consulta una organización. 404 si no existe.                 | `OrganizacionResponse`                                 |
+| GET    | `/api/organizaciones/nit/{nit}` | Busca una organización por NIT. 404 si no existe.            | `OrganizacionResponse`                                 |
+| POST   | `/api/organizaciones`           | Registra una organización. 409 si el NIT o el correo ya existen. | `201` con la `OrganizacionResponse` creada              |
+| PUT    | `/api/organizaciones/{id}`      | Reemplaza los datos. 404 si no existe; 409 si el NIT o el correo pertenecen a otra. | `OrganizacionResponse`              |
+| DELETE | `/api/organizaciones/{id}`      | Elimina la organización. 409 si tiene coordinadores o actividades. | `204` sin cuerpo                                 |
 
 ## Contrato de la API REST
 
-Diseño de las peticiones HTTP de la API. Solo `GET /api/estado` está implementado; los demás endpoints están pendientes. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
+Diseño de las peticiones HTTP de la API. Están implementados `GET /api/estado` y los endpoints 2 a 7 de organizaciones; los demás están pendientes. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
 
 ### Resumen de endpoints
 
@@ -120,12 +134,12 @@ La columna Estado indica si el endpoint ya está implementado (controlador y ser
 | #  | Verbo    | Ruta                                                 | Request                            | Response                              | Éxito | Estado    |
 |----|----------|------------------------------------------------------|------------------------------------|---------------------------------------|-------|-----------|
 | 1  | `GET`    | `/api/estado`                                        | —                                  | `EstadoResponse`                      | 200   | Hecho     |
-| 2  | `GET`    | `/api/organizaciones`                                | —                                  | `List<OrganizacionResponse>`          | 200   | Pendiente |
-| 3  | `GET`    | `/api/organizaciones/{id}`                           | —                                  | `OrganizacionResponse`                | 200   | Pendiente |
-| 4  | `GET`    | `/api/organizaciones/nit/{nit}`                      | —                                  | `OrganizacionResponse`                | 200   | Pendiente |
-| 5  | `POST`   | `/api/organizaciones`                                | `OrganizacionRequest`              | `OrganizacionResponse`                | 201   | Pendiente |
-| 6  | `PUT`    | `/api/organizaciones/{id}`                           | `OrganizacionRequest`              | `OrganizacionResponse`                | 200   | Pendiente |
-| 7  | `DELETE` | `/api/organizaciones/{id}`                           | —                                  | —                                     | 204   | Pendiente |
+| 2  | `GET`    | `/api/organizaciones`                                | —                                  | `List<OrganizacionResponse>`          | 200   | Hecho     |
+| 3  | `GET`    | `/api/organizaciones/{id}`                           | —                                  | `OrganizacionResponse`                | 200   | Hecho     |
+| 4  | `GET`    | `/api/organizaciones/nit/{nit}`                      | —                                  | `OrganizacionResponse`                | 200   | Hecho     |
+| 5  | `POST`   | `/api/organizaciones`                                | `OrganizacionRequest`              | `OrganizacionResponse`                | 201   | Hecho     |
+| 6  | `PUT`    | `/api/organizaciones/{id}`                           | `OrganizacionRequest`              | `OrganizacionResponse`                | 200   | Hecho     |
+| 7  | `DELETE` | `/api/organizaciones/{id}`                           | —                                  | —                                     | 204   | Hecho     |
 | 8  | `GET`    | `/api/organizaciones/{id}/coordinadores`             | —                                  | `List<CoordinadorResponse>`           | 200   | Pendiente |
 | 9  | `GET`    | `/api/organizaciones/{id}/actividades`               | —                                  | `List<ActividadResponse>`             | 200   | Pendiente |
 | 10 | `GET`    | `/api/organizaciones/{id}/participacion`             | —                                  | `ParticipacionOrganizacionResponse`   | 200   | Pendiente |
@@ -169,7 +183,7 @@ El parámetro `?estado=` es opcional en todas las rutas donde aparece. Si se omi
 | Código             | Uso                                                                                                           |
 |--------------------|---------------------------------------------------------------------------------------------------------------|
 | `200 OK`           | Consulta, actualización, cancelación lógica o registro de asistencia (`PATCH`) exitoso.                       |
-| `201 Created`      | Recurso creado. Incluye la cabecera `Location` con la ruta del nuevo recurso (por ejemplo `/api/voluntarios/7`). |
+| `201 Created`      | Recurso creado. El cuerpo es la `Response` del nuevo recurso, con su `id`.                                    |
 | `204 No Content`   | Eliminación física exitosa. Sin cuerpo.                                                                       |
 | `400 Bad Request`  | Cuerpo inválido: validación de campos, fechas incoherentes, JSON mal formado o valor de enum desconocido.     |
 | `404 Not Found`    | El recurso de la ruta, o un id referenciado en el cuerpo, no existe.                                          |
@@ -437,7 +451,7 @@ private CoordinadorEntity coordinador;
 
 **Caso especial — `AsistenciaEntity.inscripcion`:** la relación inscripción–asistencia es 1 : 0..1. Se implementa con `@ManyToOne` y `@JoinColumn(..., unique = true)`, lo que garantiza una sola asistencia por inscripción.
 
-> **Cuidado con `LAZY`:** acceder a una relación fuera de una transacción (por ejemplo, al serializar la entidad a JSON en un controlador) lanza `LazyInitializationException`. Por eso los controladores deben devolver DTOs de respuesta, no entidades.
+> **Cuidado con `LAZY`:** la relación se consulta en la base de datos solo cuando se accede a ella, y para eso la sesión de Hibernate debe seguir abierta (ver [Mapeo entidad a respuesta](#mapeo-entidad-a-respuesta)). Aun así, los controladores devuelven DTOs de respuesta y no entidades: el JSON no depende de la estructura de las tablas ni expone los proxies que Hibernate usa para las relaciones `LAZY`.
 
 ### Enums de estado
 
@@ -450,22 +464,33 @@ Los estados se guardan como texto (`@Enumerated(EnumType.STRING)`), así la base
 
 ### Fechas automáticas
 
-Las fechas de auditoría las asigna la propia entidad mediante callbacks de JPA; **no deben enviarse desde el cliente** (no tienen setter).
+Las fechas de auditoría las asigna la propia entidad mediante callbacks de JPA; **no deben enviarse desde el cliente** y ningún constructor ni método las recibe.
 
 | Callback       | Entidades                                         | Qué asigna                                                      |
 |----------------|---------------------------------------------------|-----------------------------------------------------------------|
 | `@PrePersist`  | Todas                                             | `fechaCreacion` / `fechaInscripcion` / `fechaRegistro` al insertar. |
 | `@PreUpdate`   | `ActividadEntity`                                 | `fechaActualizacion` en cada modificación.                     |
 
-`fechaCancelacion` sí tiene setter: la asigna el servicio al cancelar una inscripción.
+`fechaCancelacion` no es automática: la asignará un método de `InscripcionEntity` al cancelar la inscripción, que se agrega junto con el servicio de inscripciones.
 
 ### Convenciones del código
 
 - Las clases de entidad terminan en `Entity`.
-- Getters y setters escritos a mano (el proyecto no usa Lombok).
+- Las entidades solo llevan `@Getter` y `@NoArgsConstructor(access = AccessLevel.PROTECTED)` de Lombok. No tienen setters.
+- El constructor vacío protegido es el que usa JPA para cargar filas. El código crea entidades con un constructor público que recibe los datos de su `Request`, y las modifica con métodos de la propia entidad (ver la tabla siguiente).
+- Las entidades no usan `@Data`: su `equals`, `hashCode` y `toString` recorren todos los campos, incluidas las relaciones `LAZY`, lo que dispara consultas extra o `LazyInitializationException`.
 - Llaves de apertura en línea nueva, igual que el resto del código.
 - Identificadores `Integer` con `@GeneratedValue(strategy = GenerationType.IDENTITY)`.
 - Montos decimales con `BigDecimal` (`horas` → `NUMERIC(5,2)`) y fechas con `LocalDateTime`.
+
+| Entidad              | Constructor público                                                                                  | Métodos que la modifican |
+|----------------------|------------------------------------------------------------------------------------------------------|--------------------------|
+| `OrganizacionEntity` | `(nombre, nit, email, telefono)`                                                                     | `actualizar(nombre, nit, email, telefono)` para el `PUT` |
+| `CoordinadorEntity`  | `(organizacion, nombre, apellido, email, telefono)`                                                  | Pendiente con su servicio |
+| `VoluntarioEntity`   | `(documento, nombre, apellido, email, telefono)`                                                     | Pendiente con su servicio |
+| `ActividadEntity`    | `(coordinador, titulo, descripcion, ubicacion, fechaInicio, fechaFin, fechaCierre, cupoMaximo)`. La organización se toma del coordinador y el estado inicial es `ABIERTA`. | Pendiente con su servicio |
+| `InscripcionEntity`  | `(actividad, voluntario, claveIdempotencia)`. El estado inicial es `CONFIRMADA`.                     | Pendiente con su servicio |
+| `AsistenciaEntity`   | `(inscripcion, coordinador, horas, observaciones)`                                                   | Pendiente con su servicio |
 
 ### Restricciones que las entidades no cubren
 
@@ -493,11 +518,15 @@ Spring Data genera la consulta a partir del nombre del método, usando los atrib
 | Repositorio              | Método                                                                     | SQL generado (resumen)                                                           | Uso previsto |
 |--------------------------|----------------------------------------------------------------------------|----------------------------------------------------------------------------------|--------------|
 | `OrganizacionRepository` | `findByNit(String)`                                                        | `select ... from organizacion where nit = ?`                                     | Buscar por identificación tributaria |
+| `OrganizacionRepository` | `existsByNit(String)`, `existsByEmail(String)`                             | `select id from organizacion where nit = ?` (o `email = ?`)                      | `POST`: 409 si el valor único ya existe |
+| `OrganizacionRepository` | `existsByNitAndIdNot(String, Integer)`, `existsByEmailAndIdNot(String, Integer)` | `select id from organizacion where nit = ? and id <> ?`                    | `PUT`: 409 si otra organización ya usa el valor |
 | `CoordinadorRepository`  | `findByEmail(String)`                                                      | `select ... from coordinador where email = ?`                                    | Buscar por correo |
+| `CoordinadorRepository`  | `existsByOrganizacionId(Integer)`                                          | `select id from coordinador where organizacion_id = ?`                           | `DELETE` de organización: 409 si tiene coordinadores |
 | `VoluntarioRepository`   | `findByDocumento(String)`                                                  | `select ... from voluntario where documento = ?`                                 | Buscar por documento de identidad |
 | `ActividadRepository`    | `findByEstado(EstadoActividad)`                                            | `select ... from actividad where estado = ?`                                     | Listar actividades por estado |
 | `ActividadRepository`    | `countByEstado(EstadoActividad)`                                           | `select count(id) from actividad where estado = ?`                               | Contar actividades por estado |
 | `ActividadRepository`    | `findByFechaCierreAfter(LocalDateTime)`                                    | `select ... from actividad where fecha_cierre > ?`                               | RN-03: inscripción aún abierta |
+| `ActividadRepository`    | `existsByOrganizacionId(Integer)`                                          | `select id from actividad where organizacion_id = ?`                             | `DELETE` de organización: 409 si tiene actividades |
 | `InscripcionRepository`  | `findByClaveIdempotencia(String)`                                          | `select ... from inscripcion where clave_idempotencia = ?`                       | RN-06: devolver la inscripción existente |
 | `InscripcionRepository`  | `countByActividadIdAndEstado(Integer, EstadoInscripcion)`                  | `select count(id) from inscripcion where actividad_id = ? and estado = ?`        | RN-01: cupos ocupados |
 | `InscripcionRepository`  | `existsByActividadIdAndVoluntarioIdAndEstado(Integer, Integer, EstadoInscripcion)` | `select id from inscripcion where actividad_id = ? and voluntario_id = ? and estado = ?` | RN-02: inscripción activa duplicada |
@@ -522,7 +551,7 @@ Los DTOs están en `co.edu.autonoma.reservasapi.dto`. Los controladores reciben 
 | Tipo      | Sufijo     | Implementación                                                                                     |
 |-----------|------------|----------------------------------------------------------------------------------------------------|
 | Petición  | `Request`  | `record` inmutable. Cada componente lleva sus anotaciones de `jakarta.validation.constraints`.      |
-| Respuesta | `Response` | Clase con campos privados, constructor vacío, constructor con todos los campos, getters y setters. Jackson genera el JSON a partir de los getters. |
+| Respuesta | `Response` | Clase inmutable: campos `private final` con `@Getter` de Lombok y un constructor escrito a mano con todos los campos (no se usa `@AllArgsConstructor` ni `@RequiredArgsConstructor`). No tiene setters ni constructor vacío; Jackson genera el JSON a partir de los getters. Puede tener un método estático `desde(entidad)` que la construye (ver [Mapeo entidad a respuesta](#mapeo-entidad-a-respuesta)). |
 
 ### Clases de petición (`Request`)
 
@@ -558,7 +587,8 @@ Las anotaciones solo se evalúan si el parámetro del controlador lleva `@Valid`
 
 ```java
 @PostMapping
-public ResponseEntity<ActividadResponse> crear(@Valid @RequestBody ActividadRequest request)
+@ResponseStatus(HttpStatus.CREATED)
+public ActividadResponse crear(@Valid @RequestBody ActividadRequest request)
 ```
 
 Lo que no se puede expresar con anotaciones de un solo campo lo valida el servicio:
@@ -591,4 +621,36 @@ Lo que no se puede expresar con anotaciones de un solo campo lo valida el servic
 
 ### Mapeo entidad a respuesta
 
-La conversión de entidad a `Response` se hace en el servicio, dentro de un método `@Transactional`. Las relaciones `@ManyToOne` son `LAZY`, así que leer `actividad.getCoordinador().getNombre()` fuera de una transacción lanza `LazyInitializationException` (ver [Relaciones `@ManyToOne`](#relaciones-manytoone)).
+La conversión de entidad a `Response` la hace un método estático `desde(entidad)` de cada `Response`, y el servicio lo llama: `findAll().stream().map(OrganizacionResponse::desde).toList()` para listas y `OrganizacionResponse.desde(organizacion)` para un solo registro. Por ahora solo `OrganizacionResponse` lo tiene; las demás lo recibirán junto con su servicio.
+
+El servicio no usa `@Transactional`. Las relaciones `@ManyToOne` son `LAZY` (ver [Relaciones `@ManyToOne`](#relaciones-manytoone)), y leer `actividad.getCoordinador().getNombre()` funciona porque Spring Boot activa por defecto `spring.jpa.open-in-view`: la sesión de Hibernate queda abierta durante toda la petición HTTP. Fuera de una petición, por ejemplo en un `CommandLineRunner` como `PersistenciaCheck`, esa misma lectura lanza `LazyInitializationException`.
+
+---
+
+## Servicios y controladores
+
+Cada recurso tiene un `@Service` en `service/` (sufijo `Servicio`) y un `@RestController` en `controller/` (sufijo `Controller`). Ambos reciben sus dependencias por constructor en campos `private final`; el constructor lo genera `@RequiredArgsConstructor` de Lombok. Lo mismo aplica a los componentes de `config/`.
+
+| Capa        | Responsabilidad                                                                                              |
+|-------------|--------------------------------------------------------------------------------------------------------------|
+| Controlador | Define la ruta, valida el cuerpo con `@Valid`, delega en el servicio y devuelve el DTO directamente. El código de éxito distinto de 200 se fija con `@ResponseStatus`: `CREATED` (201) en `POST` y `NO_CONTENT` (204) en `DELETE`. No usa repositorios ni entidades. |
+| Servicio    | Busca las entidades, aplica las reglas del contrato, guarda y convierte el resultado con `Response.desde(...)`. No usa `@Transactional`: cada llamada al repositorio se ejecuta en su propia transacción. |
+
+### Organizaciones
+
+`OrganizacionController` y `OrganizacionServicio` implementan los endpoints 2 a 7 del [resumen de endpoints](#resumen-de-endpoints).
+
+| Método del servicio        | Endpoint                            | Regla                                                                                   |
+|----------------------------|-------------------------------------|-----------------------------------------------------------------------------------------|
+| `listarOrganizaciones()`   | `GET /api/organizaciones`           | —                                                                                       |
+| `consultarOrganizacion(id)`| `GET /api/organizaciones/{id}`      | 404 si no existe.                                                                       |
+| `consultarPorNit(nit)`     | `GET /api/organizaciones/nit/{nit}` | 404 si no existe.                                                                       |
+| `crearOrganizacion(...)`   | `POST /api/organizaciones`          | 409 si el `nit` o el `email` ya existen.                                                |
+| `actualizarOrganizacion(...)` | `PUT /api/organizaciones/{id}`   | 404 si no existe; 409 si el `nit` o el `email` pertenecen a otra organización.          |
+| `eliminarOrganizacion(id)` | `DELETE /api/organizaciones/{id}`   | 404 si no existe; 409 si tiene coordinadores o actividades (eliminación física).        |
+
+Los endpoints 8 a 10 (`/coordinadores`, `/actividades` y `/participacion` de una organización) quedan pendientes: devuelven `CoordinadorResponse`, `ActividadResponse` y el resumen de participación, cuyo mapeo pertenece a los servicios de esas entidades.
+
+### Errores mientras no exista el manejador global
+
+El servicio lanza `ResponseStatusException` con `404` o `409`, y Spring responde con ese código. Un cuerpo inválido (`@Valid`) o un JSON mal formado responde `400`. El cuerpo de error es el predeterminado de Spring Boot; el formato propio de la API queda para la capa de [manejo de errores](#estado-del-proyecto).

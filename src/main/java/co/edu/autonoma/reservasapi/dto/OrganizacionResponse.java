@@ -1,21 +1,20 @@
 package co.edu.autonoma.reservasapi.dto;
 
+import co.edu.autonoma.reservasapi.entity.OrganizacionEntity;
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 
 // Respuesta de los endpoints de /api/organizaciones
+@Getter
 public class OrganizacionResponse
 {
-    private Integer id;
-    private String nombre;
-    private String nit;
-    private String email;
-    private String telefono;
-    private LocalDateTime fechaCreacion;
-
-    public OrganizacionResponse()
-    {
-
-    }
+    private final Integer id;
+    private final String nombre;
+    private final String nit;
+    private final String email;
+    private final String telefono;
+    private final LocalDateTime fechaCreacion;
 
     public OrganizacionResponse(
             Integer id,
@@ -34,63 +33,16 @@ public class OrganizacionResponse
         this.fechaCreacion = fechaCreacion;
     }
 
-    public Integer getId()
+    // Conversión de la entidad a la respuesta; la usa OrganizacionServicio
+    public static OrganizacionResponse desde(OrganizacionEntity organizacion)
     {
-        return id;
-    }
-
-    public void setId(Integer id)
-    {
-        this.id = id;
-    }
-
-    public String getNombre()
-    {
-        return nombre;
-    }
-
-    public void setNombre(String nombre)
-    {
-        this.nombre = nombre;
-    }
-
-    public String getNit()
-    {
-        return nit;
-    }
-
-    public void setNit(String nit)
-    {
-        this.nit = nit;
-    }
-
-    public String getEmail()
-    {
-        return email;
-    }
-
-    public void setEmail(String email)
-    {
-        this.email = email;
-    }
-
-    public String getTelefono()
-    {
-        return telefono;
-    }
-
-    public void setTelefono(String telefono)
-    {
-        this.telefono = telefono;
-    }
-
-    public LocalDateTime getFechaCreacion()
-    {
-        return fechaCreacion;
-    }
-
-    public void setFechaCreacion(LocalDateTime fechaCreacion)
-    {
-        this.fechaCreacion = fechaCreacion;
+        return new OrganizacionResponse(
+                organizacion.getId(),
+                organizacion.getNombre(),
+                organizacion.getNit(),
+                organizacion.getEmail(),
+                organizacion.getTelefono(),
+                organizacion.getFechaCreacion()
+        );
     }
 }
