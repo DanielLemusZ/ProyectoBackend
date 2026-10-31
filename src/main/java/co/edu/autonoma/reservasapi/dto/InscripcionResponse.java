@@ -1,29 +1,26 @@
 package co.edu.autonoma.reservasapi.dto;
 
 import co.edu.autonoma.reservasapi.entity.EstadoInscripcion;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 // Respuesta de los endpoints de /api/inscripciones y de las rutas anidadas
 // /api/actividades/{id}/inscripciones y /api/voluntarios/{id}/inscripciones
+@Getter
 public class InscripcionResponse
 {
-    private Integer id;
-    private Integer actividadId;
-    private String actividadTitulo;
-    private Integer voluntarioId;
-    private String voluntarioNombre;
-    private String claveIdempotencia;
-    private EstadoInscripcion estado;
-    private LocalDateTime fechaInscripcion;
+    private final Integer id;
+    private final Integer actividadId;
+    private final String actividadTitulo;
+    private final Integer voluntarioId;
+    private final String voluntarioNombre;
+    private final String claveIdempotencia;
+    private final EstadoInscripcion estado;
+    private final LocalDateTime fechaInscripcion;
 
     // null mientras la inscripción esté CONFIRMADA
-    private LocalDateTime fechaCancelacion;
-
-    public InscripcionResponse()
-    {
-
-    }
+    private final LocalDateTime fechaCancelacion;
 
     public InscripcionResponse(
             Integer id,
@@ -45,96 +42,6 @@ public class InscripcionResponse
         this.claveIdempotencia = claveIdempotencia;
         this.estado = estado;
         this.fechaInscripcion = fechaInscripcion;
-        this.fechaCancelacion = fechaCancelacion;
-    }
-
-    public Integer getId()
-    {
-        return id;
-    }
-
-    public void setId(Integer id)
-    {
-        this.id = id;
-    }
-
-    public Integer getActividadId()
-    {
-        return actividadId;
-    }
-
-    public void setActividadId(Integer actividadId)
-    {
-        this.actividadId = actividadId;
-    }
-
-    public String getActividadTitulo()
-    {
-        return actividadTitulo;
-    }
-
-    public void setActividadTitulo(String actividadTitulo)
-    {
-        this.actividadTitulo = actividadTitulo;
-    }
-
-    public Integer getVoluntarioId()
-    {
-        return voluntarioId;
-    }
-
-    public void setVoluntarioId(Integer voluntarioId)
-    {
-        this.voluntarioId = voluntarioId;
-    }
-
-    public String getVoluntarioNombre()
-    {
-        return voluntarioNombre;
-    }
-
-    public void setVoluntarioNombre(String voluntarioNombre)
-    {
-        this.voluntarioNombre = voluntarioNombre;
-    }
-
-    public String getClaveIdempotencia()
-    {
-        return claveIdempotencia;
-    }
-
-    public void setClaveIdempotencia(String claveIdempotencia)
-    {
-        this.claveIdempotencia = claveIdempotencia;
-    }
-
-    public EstadoInscripcion getEstado()
-    {
-        return estado;
-    }
-
-    public void setEstado(EstadoInscripcion estado)
-    {
-        this.estado = estado;
-    }
-
-    public LocalDateTime getFechaInscripcion()
-    {
-        return fechaInscripcion;
-    }
-
-    public void setFechaInscripcion(LocalDateTime fechaInscripcion)
-    {
-        this.fechaInscripcion = fechaInscripcion;
-    }
-
-    public LocalDateTime getFechaCancelacion()
-    {
-        return fechaCancelacion;
-    }
-
-    public void setFechaCancelacion(LocalDateTime fechaCancelacion)
-    {
         this.fechaCancelacion = fechaCancelacion;
     }
 }

@@ -14,6 +14,7 @@ import co.edu.autonoma.reservasapi.repository.CoordinadorRepository;
 import co.edu.autonoma.reservasapi.repository.InscripcionRepository;
 import co.edu.autonoma.reservasapi.repository.OrganizacionRepository;
 import co.edu.autonoma.reservasapi.repository.VoluntarioRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ import java.util.function.Function;
 
 // Comprobación temporal de persistencia: se retira cuando existan los endpoints GET.
 @Component
+@RequiredArgsConstructor
 public class PersistenciaCheck implements CommandLineRunner
 {
     private static final String NIT_PRUEBA = "900000001-1";
@@ -36,21 +38,6 @@ public class PersistenciaCheck implements CommandLineRunner
     private final ActividadRepository actividadRepository;
     private final InscripcionRepository inscripcionRepository;
     private final AsistenciaRepository asistenciaRepository;
-
-    public PersistenciaCheck(OrganizacionRepository organizacionRepository,
-                             CoordinadorRepository coordinadorRepository,
-                             VoluntarioRepository voluntarioRepository,
-                             ActividadRepository actividadRepository,
-                             InscripcionRepository inscripcionRepository,
-                             AsistenciaRepository asistenciaRepository)
-    {
-        this.organizacionRepository = organizacionRepository;
-        this.coordinadorRepository = coordinadorRepository;
-        this.voluntarioRepository = voluntarioRepository;
-        this.actividadRepository = actividadRepository;
-        this.inscripcionRepository = inscripcionRepository;
-        this.asistenciaRepository = asistenciaRepository;
-    }
 
     @Override
     public void run(String... args)
@@ -66,7 +53,7 @@ public class PersistenciaCheck implements CommandLineRunner
                 .orElseGet(this::crearVoluntario);
 
         // Actividad, inscripción y asistencia se crean nuevas en cada arranque
-        ActividadEntity actividad = actividadRepository.save(nuevaActividad(organizacion, coordinador));
+        ActividadEntity actividad = actividadRepository.save(nuevaActividad(coordinador));
         InscripcionEntity inscripcion = inscripcionRepository.save(nuevaInscripcion(actividad, voluntario));
         asistenciaRepository.save(nuevaAsistencia(inscripcion, coordinador));
 
@@ -111,65 +98,60 @@ public class PersistenciaCheck implements CommandLineRunner
 
     private OrganizacionEntity crearOrganizacion()
     {
-        OrganizacionEntity organizacion = new OrganizacionEntity();
-        organizacion.setNombre("Organización de prueba");
-        organizacion.setNit(NIT_PRUEBA);
-        organizacion.setEmail("contacto.prueba@damano.org");
-        return organizacionRepository.save(organizacion);
+        return organizacionRepository.save(new OrganizacionEntity(
+                "Organización de prueba",
+                NIT_PRUEBA,
+                "contacto.prueba@damano.org",
+                null
+        ));
     }
 
     private CoordinadorEntity crearCoordinador(OrganizacionEntity organizacion)
     {
-        CoordinadorEntity coordinador = new CoordinadorEntity();
-        coordinador.setOrganizacion(organizacion);
-        coordinador.setNombre("Coordinador");
-        coordinador.setApellido("Prueba");
-        coordinador.setEmail(EMAIL_COORDINADOR_PRUEBA);
-        return coordinadorRepository.save(coordinador);
+        return coordinadorRepository.save(new CoordinadorEntity(
+                organizacion,
+                "Coordinador",
+                "Prueba",
+                EMAIL_COORDINADOR_PRUEBA,
+                null
+        ));
     }
 
     private VoluntarioEntity crearVoluntario()
     {
-        VoluntarioEntity voluntario = new VoluntarioEntity();
-        voluntario.setDocumento(DOCUMENTO_VOLUNTARIO_PRUEBA);
-        voluntario.setNombre("Voluntario");
-        voluntario.setApellido("Prueba");
-        voluntario.setEmail("voluntario.prueba@damano.org");
-        return voluntarioRepository.save(voluntario);
+        return voluntarioRepository.save(new VoluntarioEntity(
+                DOCUMENTO_VOLUNTARIO_PRUEBA,
+                "Voluntario",
+                "Prueba",
+                "voluntario.prueba@damano.org",
+                null
+        ));
     }
 
-    private ActividadEntity nuevaActividad(OrganizacionEntity organizacion, CoordinadorEntity coordinador)
+    private ActividadEntity nuevaActividad(CoordinadorEntity coordinador)
     {
         LocalDateTime inicio = LocalDateTime.now().plusDays(7);
 
-        ActividadEntity actividad = new ActividadEntity();
-        actividad.setOrganizacion(organizacion);
-        actividad.setCoordinador(coordinador);
-        actividad.setTitulo("Jornada de limpieza de prueba");
-        actividad.setUbicacion("Parque central");
-        actividad.setFechaInicio(inicio);
-        actividad.setFechaFin(inicio.plusHours(4));
-        actividad.setFechaCierre(inicio.minusDays(1));
-        actividad.setCupoMaximo(20);
-        return actividad;
+        return new ActividadEntity(
+                coordinador,
+                "Jornada de limpieza de prueba",
+                null,
+                "Parque central",
+                inicio,
+                inicio.plusHours(4),
+                inicio.minusDays(1),
+                20
+        );
     }
 
     private InscripcionEntity nuevaInscripcion(ActividadEntity actividad, VoluntarioEntity voluntario)
     {
-        InscripcionEntity inscripcion = new InscripcionEntity();
-        inscripcion.setActividad(actividad);
-        inscripcion.setVoluntario(voluntario);
         // La actividad es nueva en cada arranque, así que la clave también es única
-        inscripcion.setClaveIdempotencia("prueba-actividad-" + actividad.getId());
-        return inscripcion;
+        return new InscripcionEntity(actividad, voluntario, "prueba-actividad-" + actividad.getId());
     }
 
     private AsistenciaEntity nuevaAsistencia(InscripcionEntity inscripcion, CoordinadorEntity coordinador)
     {
-        AsistenciaEntity asistencia = new AsistenciaEntity();
-        asistencia.setInscripcion(inscripcion);
-        asistencia.setCoordinador(coordinador);
-        asistencia.setHoras(new BigDecimal("4.00"));
-        return asistencia;
+        return new AsistenciaEntity(inscripcion, coordinador, new BigDecimal("4.00"), null);
     }
 }

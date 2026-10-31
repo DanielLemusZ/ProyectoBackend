@@ -12,11 +12,16 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inscripcion")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class InscripcionEntity
 {
     @Id
@@ -47,74 +52,18 @@ public class InscripcionEntity
     @Column(name = "fecha_cancelacion")
     private LocalDateTime fechaCancelacion;
 
+    public InscripcionEntity(ActividadEntity actividad,
+                             VoluntarioEntity voluntario,
+                             String claveIdempotencia)
+    {
+        this.actividad = actividad;
+        this.voluntario = voluntario;
+        this.claveIdempotencia = claveIdempotencia;
+    }
+
     @PrePersist
     protected void alCrear()
     {
         fechaInscripcion = LocalDateTime.now();
-    }
-
-    public Integer getId()
-    {
-        return id;
-    }
-
-    public void setId(Integer id)
-    {
-        this.id = id;
-    }
-
-    public ActividadEntity getActividad()
-    {
-        return actividad;
-    }
-
-    public void setActividad(ActividadEntity actividad)
-    {
-        this.actividad = actividad;
-    }
-
-    public VoluntarioEntity getVoluntario()
-    {
-        return voluntario;
-    }
-
-    public void setVoluntario(VoluntarioEntity voluntario)
-    {
-        this.voluntario = voluntario;
-    }
-
-    public String getClaveIdempotencia()
-    {
-        return claveIdempotencia;
-    }
-
-    public void setClaveIdempotencia(String claveIdempotencia)
-    {
-        this.claveIdempotencia = claveIdempotencia;
-    }
-
-    public EstadoInscripcion getEstado()
-    {
-        return estado;
-    }
-
-    public void setEstado(EstadoInscripcion estado)
-    {
-        this.estado = estado;
-    }
-
-    public LocalDateTime getFechaInscripcion()
-    {
-        return fechaInscripcion;
-    }
-
-    public LocalDateTime getFechaCancelacion()
-    {
-        return fechaCancelacion;
-    }
-
-    public void setFechaCancelacion(LocalDateTime fechaCancelacion)
-    {
-        this.fechaCancelacion = fechaCancelacion;
     }
 }

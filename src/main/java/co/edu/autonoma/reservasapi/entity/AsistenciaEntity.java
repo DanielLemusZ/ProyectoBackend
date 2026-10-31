@@ -10,12 +10,17 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "asistencia")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AsistenciaEntity
 {
     @Id
@@ -43,64 +48,20 @@ public class AsistenciaEntity
     @Column(name = "fecha_registro", nullable = false, updatable = false)
     private LocalDateTime fechaRegistro;
 
+    public AsistenciaEntity(InscripcionEntity inscripcion,
+                            CoordinadorEntity coordinador,
+                            BigDecimal horas,
+                            String observaciones)
+    {
+        this.inscripcion = inscripcion;
+        this.coordinador = coordinador;
+        this.horas = horas;
+        this.observaciones = observaciones;
+    }
+
     @PrePersist
     protected void alCrear()
     {
         fechaRegistro = LocalDateTime.now();
-    }
-
-    public Integer getId()
-    {
-        return id;
-    }
-
-    public void setId(Integer id)
-    {
-        this.id = id;
-    }
-
-    public InscripcionEntity getInscripcion()
-    {
-        return inscripcion;
-    }
-
-    public void setInscripcion(InscripcionEntity inscripcion)
-    {
-        this.inscripcion = inscripcion;
-    }
-
-    public CoordinadorEntity getCoordinador()
-    {
-        return coordinador;
-    }
-
-    public void setCoordinador(CoordinadorEntity coordinador)
-    {
-        this.coordinador = coordinador;
-    }
-
-    public BigDecimal getHoras()
-    {
-        return horas;
-    }
-
-    public void setHoras(BigDecimal horas)
-    {
-        this.horas = horas;
-    }
-
-    public String getObservaciones()
-    {
-        return observaciones;
-    }
-
-    public void setObservaciones(String observaciones)
-    {
-        this.observaciones = observaciones;
-    }
-
-    public LocalDateTime getFechaRegistro()
-    {
-        return fechaRegistro;
     }
 }

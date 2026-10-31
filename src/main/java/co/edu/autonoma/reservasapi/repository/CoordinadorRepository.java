@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface CoordinadorRepository extends JpaRepository<CoordinadorEntity, Integer>
 {
     Optional<CoordinadorEntity> findByEmail(String email);
+
+    boolean existsByOrganizacionId(Integer organizacionId);
 }

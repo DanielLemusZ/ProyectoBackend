@@ -10,11 +10,16 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "coordinador")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CoordinadorEntity
 {
     @Id
@@ -41,74 +46,22 @@ public class CoordinadorEntity
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
+    public CoordinadorEntity(OrganizacionEntity organizacion,
+                             String nombre,
+                             String apellido,
+                             String email,
+                             String telefono)
+    {
+        this.organizacion = organizacion;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.email = email;
+        this.telefono = telefono;
+    }
+
     @PrePersist
     protected void alCrear()
     {
         fechaCreacion = LocalDateTime.now();
-    }
-
-    public Integer getId()
-    {
-        return id;
-    }
-
-    public void setId(Integer id)
-    {
-        this.id = id;
-    }
-
-    public OrganizacionEntity getOrganizacion()
-    {
-        return organizacion;
-    }
-
-    public void setOrganizacion(OrganizacionEntity organizacion)
-    {
-        this.organizacion = organizacion;
-    }
-
-    public String getNombre()
-    {
-        return nombre;
-    }
-
-    public void setNombre(String nombre)
-    {
-        this.nombre = nombre;
-    }
-
-    public String getApellido()
-    {
-        return apellido;
-    }
-
-    public void setApellido(String apellido)
-    {
-        this.apellido = apellido;
-    }
-
-    public String getEmail()
-    {
-        return email;
-    }
-
-    public void setEmail(String email)
-    {
-        this.email = email;
-    }
-
-    public String getTelefono()
-    {
-        return telefono;
-    }
-
-    public void setTelefono(String telefono)
-    {
-        this.telefono = telefono;
-    }
-
-    public LocalDateTime getFechaCreacion()
-    {
-        return fechaCreacion;
     }
 }
