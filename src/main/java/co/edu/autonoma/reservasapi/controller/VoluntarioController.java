@@ -1,9 +1,11 @@
 package co.edu.autonoma.reservasapi.controller;
 
+import co.edu.autonoma.reservasapi.dto.AsistenciaResponse;
 import co.edu.autonoma.reservasapi.dto.InscripcionResponse;
 import co.edu.autonoma.reservasapi.dto.VoluntarioRequest;
 import co.edu.autonoma.reservasapi.dto.VoluntarioResponse;
 import co.edu.autonoma.reservasapi.entity.EstadoInscripcion;
+import co.edu.autonoma.reservasapi.service.AsistenciaServicio;
 import co.edu.autonoma.reservasapi.service.InscripcionServicio;
 import co.edu.autonoma.reservasapi.service.VoluntarioServicio;
 import jakarta.validation.Valid;
@@ -29,6 +31,7 @@ public class VoluntarioController
 {
     private final VoluntarioServicio voluntarioServicio;
     private final InscripcionServicio inscripcionServicio;
+    private final AsistenciaServicio asistenciaServicio;
 
     @GetMapping
     public List<VoluntarioResponse> listarVoluntarios()
@@ -74,5 +77,11 @@ public class VoluntarioController
                                                          @RequestParam(required = false) EstadoInscripcion estado)
     {
         return inscripcionServicio.listarPorVoluntario(id, estado);
+    }
+
+    @GetMapping("/{id}/asistencias")
+    public List<AsistenciaResponse> listarAsistencias(@PathVariable Integer id)
+    {
+        return asistenciaServicio.listarPorVoluntario(id);
     }
 }

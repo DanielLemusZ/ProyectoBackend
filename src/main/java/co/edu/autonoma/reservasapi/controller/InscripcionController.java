@@ -1,8 +1,11 @@
 package co.edu.autonoma.reservasapi.controller;
 
+import co.edu.autonoma.reservasapi.dto.AsistenciaRequest;
+import co.edu.autonoma.reservasapi.dto.AsistenciaResponse;
 import co.edu.autonoma.reservasapi.dto.InscripcionRequest;
 import co.edu.autonoma.reservasapi.dto.InscripcionResponse;
 import co.edu.autonoma.reservasapi.entity.EstadoInscripcion;
+import co.edu.autonoma.reservasapi.service.AsistenciaServicio;
 import co.edu.autonoma.reservasapi.service.InscripcionServicio;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,6 +30,7 @@ import java.util.Optional;
 public class InscripcionController
 {
     private final InscripcionServicio inscripcionServicio;
+    private final AsistenciaServicio asistenciaServicio;
 
     @GetMapping
     public List<InscripcionResponse> listarInscripciones(@RequestParam(required = false) EstadoInscripcion estado)
@@ -59,5 +64,12 @@ public class InscripcionController
     public InscripcionResponse cancelarInscripcion(@PathVariable Integer id)
     {
         return inscripcionServicio.cancelarInscripcion(id);
+    }
+
+    @PatchMapping("/{id}/asistencia")
+    public AsistenciaResponse registrarAsistencia(@PathVariable Integer id,
+                                                  @Valid @RequestBody AsistenciaRequest request)
+    {
+        return asistenciaServicio.registrarAsistencia(id, request);
     }
 }
