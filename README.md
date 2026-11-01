@@ -29,12 +29,12 @@ Seguimiento de lo implementado y lo pendiente. Actualizar esta tabla con cada av
 | Entidades JPA con relaciones `@ManyToOne`          | Hecho     | Ver [Implementación de entidades JPA](#implementación-de-entidades-jpa). |
 | Conexión a `DaMano_db` en `application.properties` | Hecho     | La contraseña llega por la variable de entorno `DB_PASSWORD`. Ver [Configuración y ejecución](#configuración-y-ejecución). |
 | Repositorios (`JpaRepository`)                     | Hecho     | Ver [Repositorios Spring Data JPA](#repositorios-spring-data-jpa).   |
-| Query methods y primera consulta real              | Hecho     | Las seis entidades, comprobadas en `config/PersistenciaCheck.java`.  |
+| Query methods                                      | Hecho     | Las seis entidades. Ver [Repositorios Spring Data JPA](#repositorios-spring-data-jpa). |
 | Contrato de la API REST                            | Hecho     | Ver [Contrato de la API REST](#contrato-de-la-api-rest).             |
 | DTOs de petición y respuesta                       | Hecho     | Ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta).   |
-| Lombok en entidades, `Response` e inyección de dependencias | Hecho | Entidades sin setters, `Response` inmutables y `@RequiredArgsConstructor` en servicios, controladores y `config/`. Ver [Convenciones del código](#convenciones-del-código). |
-| Servicios con reglas de negocio (RN-01 a RN-06)    | En progreso | `OrganizacionServicio` hecho. Ver [Servicios y controladores](#servicios-y-controladores). |
-| Controladores del contrato HTTP                    | En progreso | `OrganizacionController` hecho (endpoints 2 a 7). Faltan los demás del [resumen de endpoints](#resumen-de-endpoints). |
+| Lombok en entidades, `Response` e inyección de dependencias | Hecho | Entidades sin setters, `Response` inmutables y `@RequiredArgsConstructor` en servicios y controladores. Ver [Convenciones del código](#convenciones-del-código). |
+| Servicios con reglas de negocio (RN-01 a RN-06)    | En progreso | `OrganizacionServicio` y `VoluntarioServicio` hechos. Ver [Servicios y controladores](#servicios-y-controladores). |
+| Controladores del contrato HTTP                    | En progreso | `OrganizacionController` (endpoints 2 a 7) y `VoluntarioController` (endpoints 18 a 23) hechos. Faltan los demás del [resumen de endpoints](#resumen-de-endpoints). |
 | Manejo de errores (400, 404, 409)                  | Pendiente | Los códigos ya se responden; falta el formato común del cuerpo de error. Ver [Códigos de estado HTTP](#códigos-de-estado-http). |
 
 ## Estructura del proyecto
@@ -42,11 +42,10 @@ Seguimiento de lo implementado y lo pendiente. Actualizar esta tabla con cada av
 ```
 src/main/java/co/edu/autonoma/reservasapi/
 ├── ProyectoBackendApplication.java   # Clase principal de Spring Boot
-├── config/
-│   └── PersistenciaCheck.java        # Comprobación temporal de persistencia al arrancar
 ├── controller/
 │   ├── EstadoController.java         # GET /api/estado
-│   └── OrganizacionController.java   # /api/organizaciones
+│   ├── OrganizacionController.java   # /api/organizaciones
+│   └── VoluntarioController.java     # /api/voluntarios
 ├── dto/
 │   ├── OrganizacionRequest.java                # record: POST y PUT de organizaciones
 │   ├── CoordinadorRequest.java                 # record: POST de coordinadores
@@ -85,7 +84,8 @@ src/main/java/co/edu/autonoma/reservasapi/
 │   └── AsistenciaRepository.java     # JpaRepository<AsistenciaEntity, Integer>
 └── service/
     ├── EstadoServicio.java           # Lógica del endpoint de estado
-    └── OrganizacionServicio.java     # Reglas y mapeo de organizaciones
+    ├── OrganizacionServicio.java     # Reglas y mapeo de organizaciones
+    └── VoluntarioServicio.java       # Reglas y mapeo de voluntarios
 ```
 
 | Paquete       | Contenido                                                               |
@@ -95,7 +95,6 @@ src/main/java/co/edu/autonoma/reservasapi/
 | `dto/`        | Entrada y salida de la API: records `Request` y clases `Response`; ninguna clase `@Entity`. |
 | `service/`    | Clases `@Service` terminadas en `Servicio`: reglas de negocio y conversión entidad a `Response`. |
 | `controller/` | Clases `@RestController`: reciben DTOs, delegan en el servicio y devuelven el código HTTP. |
-| `config/`     | Configuración y comprobaciones de arranque.                             |
 
 ## Configuración y ejecución
 
@@ -122,10 +121,16 @@ Si la consola muestra `password authentication failed for user "postgres"`, la v
 | POST   | `/api/organizaciones`           | Registra una organización. 409 si el NIT o el correo ya existen. | `201` con la `OrganizacionResponse` creada              |
 | PUT    | `/api/organizaciones/{id}`      | Reemplaza los datos. 404 si no existe; 409 si el NIT o el correo pertenecen a otra. | `OrganizacionResponse`              |
 | DELETE | `/api/organizaciones/{id}`      | Elimina la organización. 409 si tiene coordinadores o actividades. | `204` sin cuerpo                                 |
+| GET    | `/api/voluntarios`              | Lista todos los voluntarios.                                 | `[{"id": 1, "documento": "...", "nombre": "...", ...}]` |
+| GET    | `/api/voluntarios/{id}`         | Consulta un voluntario. 404 si no existe.                    | `VoluntarioResponse`                                   |
+| GET    | `/api/voluntarios/documento/{documento}` | Busca un voluntario por documento. 404 si no existe. | `VoluntarioResponse`                                   |
+| POST   | `/api/voluntarios`              | Registra un voluntario. 409 si el documento o el correo ya existen. | `201` con la `VoluntarioResponse` creada         |
+| PUT    | `/api/voluntarios/{id}`         | Reemplaza los datos. 404 si no existe; 409 si el documento o el correo pertenecen a otro. | `VoluntarioResponse`       |
+| DELETE | `/api/voluntarios/{id}`         | Elimina el voluntario. 409 si tiene inscripciones en cualquier estado. | `204` sin cuerpo                             |
 
 ## Contrato de la API REST
 
-Diseño de las peticiones HTTP de la API. Están implementados `GET /api/estado` y los endpoints 2 a 7 de organizaciones; los demás están pendientes. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
+Diseño de las peticiones HTTP de la API. Están implementados `GET /api/estado`, los endpoints 2 a 7 de organizaciones y los endpoints 18 a 23 de voluntarios; los demás están pendientes. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
 
 ### Resumen de endpoints
 
@@ -150,12 +155,12 @@ La columna Estado indica si el endpoint ya está implementado (controlador y ser
 | 15 | `PUT`    | `/api/coordinadores/{id}`                            | `CoordinadorActualizacionRequest`  | `CoordinadorResponse`                 | 200   | Pendiente |
 | 16 | `DELETE` | `/api/coordinadores/{id}`                            | —                                  | —                                     | 204   | Pendiente |
 | 17 | `GET`    | `/api/coordinadores/{id}/actividades`                | —                                  | `List<ActividadResponse>`             | 200   | Pendiente |
-| 18 | `GET`    | `/api/voluntarios`                                   | —                                  | `List<VoluntarioResponse>`            | 200   | Pendiente |
-| 19 | `GET`    | `/api/voluntarios/{id}`                              | —                                  | `VoluntarioResponse`                  | 200   | Pendiente |
-| 20 | `GET`    | `/api/voluntarios/documento/{documento}`             | —                                  | `VoluntarioResponse`                  | 200   | Pendiente |
-| 21 | `POST`   | `/api/voluntarios`                                   | `VoluntarioRequest`                | `VoluntarioResponse`                  | 201   | Pendiente |
-| 22 | `PUT`    | `/api/voluntarios/{id}`                              | `VoluntarioRequest`                | `VoluntarioResponse`                  | 200   | Pendiente |
-| 23 | `DELETE` | `/api/voluntarios/{id}`                              | —                                  | —                                     | 204   | Pendiente |
+| 18 | `GET`    | `/api/voluntarios`                                   | —                                  | `List<VoluntarioResponse>`            | 200   | Hecho     |
+| 19 | `GET`    | `/api/voluntarios/{id}`                              | —                                  | `VoluntarioResponse`                  | 200   | Hecho     |
+| 20 | `GET`    | `/api/voluntarios/documento/{documento}`             | —                                  | `VoluntarioResponse`                  | 200   | Hecho     |
+| 21 | `POST`   | `/api/voluntarios`                                   | `VoluntarioRequest`                | `VoluntarioResponse`                  | 201   | Hecho     |
+| 22 | `PUT`    | `/api/voluntarios/{id}`                              | `VoluntarioRequest`                | `VoluntarioResponse`                  | 200   | Hecho     |
+| 23 | `DELETE` | `/api/voluntarios/{id}`                              | —                                  | —                                     | 204   | Hecho     |
 | 24 | `GET`    | `/api/voluntarios/{id}/inscripciones?estado={estado}`| —                                  | `List<InscripcionResponse>`           | 200   | Pendiente |
 | 25 | `GET`    | `/api/voluntarios/{id}/asistencias`                  | —                                  | `List<AsistenciaResponse>`            | 200   | Pendiente |
 | 26 | `GET`    | `/api/actividades?estado={estado}`                   | —                                  | `List<ActividadResponse>`             | 200   | Pendiente |
@@ -487,7 +492,7 @@ Las fechas de auditoría las asigna la propia entidad mediante callbacks de JPA;
 |----------------------|------------------------------------------------------------------------------------------------------|--------------------------|
 | `OrganizacionEntity` | `(nombre, nit, email, telefono)`                                                                     | `actualizar(nombre, nit, email, telefono)` para el `PUT` |
 | `CoordinadorEntity`  | `(organizacion, nombre, apellido, email, telefono)`                                                  | Pendiente con su servicio |
-| `VoluntarioEntity`   | `(documento, nombre, apellido, email, telefono)`                                                     | Pendiente con su servicio |
+| `VoluntarioEntity`   | `(documento, nombre, apellido, email, telefono)`                                                     | `actualizar(documento, nombre, apellido, email, telefono)` para el `PUT` |
 | `ActividadEntity`    | `(coordinador, titulo, descripcion, ubicacion, fechaInicio, fechaFin, fechaCierre, cupoMaximo)`. La organización se toma del coordinador y el estado inicial es `ABIERTA`. | Pendiente con su servicio |
 | `InscripcionEntity`  | `(actividad, voluntario, claveIdempotencia)`. El estado inicial es `CONFIRMADA`.                     | Pendiente con su servicio |
 | `AsistenciaEntity`   | `(inscripcion, coordinador, horas, observaciones)`                                                   | Pendiente con su servicio |
@@ -523,6 +528,8 @@ Spring Data genera la consulta a partir del nombre del método, usando los atrib
 | `CoordinadorRepository`  | `findByEmail(String)`                                                      | `select ... from coordinador where email = ?`                                    | Buscar por correo |
 | `CoordinadorRepository`  | `existsByOrganizacionId(Integer)`                                          | `select id from coordinador where organizacion_id = ?`                           | `DELETE` de organización: 409 si tiene coordinadores |
 | `VoluntarioRepository`   | `findByDocumento(String)`                                                  | `select ... from voluntario where documento = ?`                                 | Buscar por documento de identidad |
+| `VoluntarioRepository`   | `existsByDocumento(String)`, `existsByEmail(String)`                       | `select id from voluntario where documento = ?` (o `email = ?`)                  | `POST`: 409 si el valor único ya existe |
+| `VoluntarioRepository`   | `existsByDocumentoAndIdNot(String, Integer)`, `existsByEmailAndIdNot(String, Integer)` | `select id from voluntario where documento = ? and id <> ?`          | `PUT`: 409 si otro voluntario ya usa el valor |
 | `ActividadRepository`    | `findByEstado(EstadoActividad)`                                            | `select ... from actividad where estado = ?`                                     | Listar actividades por estado |
 | `ActividadRepository`    | `countByEstado(EstadoActividad)`                                           | `select count(id) from actividad where estado = ?`                               | Contar actividades por estado |
 | `ActividadRepository`    | `findByFechaCierreAfter(LocalDateTime)`                                    | `select ... from actividad where fecha_cierre > ?`                               | RN-03: inscripción aún abierta |
@@ -530,17 +537,10 @@ Spring Data genera la consulta a partir del nombre del método, usando los atrib
 | `InscripcionRepository`  | `findByClaveIdempotencia(String)`                                          | `select ... from inscripcion where clave_idempotencia = ?`                       | RN-06: devolver la inscripción existente |
 | `InscripcionRepository`  | `countByActividadIdAndEstado(Integer, EstadoInscripcion)`                  | `select count(id) from inscripcion where actividad_id = ? and estado = ?`        | RN-01: cupos ocupados |
 | `InscripcionRepository`  | `existsByActividadIdAndVoluntarioIdAndEstado(Integer, Integer, EstadoInscripcion)` | `select id from inscripcion where actividad_id = ? and voluntario_id = ? and estado = ?` | RN-02: inscripción activa duplicada |
+| `InscripcionRepository`  | `existsByVoluntarioId(Integer)`                                            | `select id from inscripcion where voluntario_id = ?`                             | `DELETE` de voluntario: 409 si tiene inscripciones |
 | `AsistenciaRepository`   | `existsByInscripcionId(Integer)`                                           | `select id from asistencia where inscripcion_id = ?`                             | RN-04: una asistencia por inscripción |
 
 En nombres como `countByActividadIdAndEstado`, `ActividadId` recorre la relación `actividad.id`; Hibernate lo resuelve con la columna `actividad_id`, sin join.
-
-### Comprobación de persistencia
-
-`config/PersistenciaCheck.java` es un `CommandLineRunner` temporal que, en cada arranque, ejecuta `save()` en las seis entidades, muestra `count()` y `findAll()` de cada repositorio y el resultado de todos los query methods, junto con el SQL que genera Hibernate (`spring.jpa.show-sql=true`).
-
-- La organización, el coordinador y el voluntario de prueba se buscan por `nit`, `email` y `documento` (columnas únicas) y se reutilizan si ya existen.
-- Cada ejecución agrega una fila nueva en `actividad`, `inscripcion` y `asistencia`.
-- Se retirará cuando existan los endpoints `GET`.
 
 ---
 
@@ -621,15 +621,15 @@ Lo que no se puede expresar con anotaciones de un solo campo lo valida el servic
 
 ### Mapeo entidad a respuesta
 
-La conversión de entidad a `Response` la hace un método estático `desde(entidad)` de cada `Response`, y el servicio lo llama: `findAll().stream().map(OrganizacionResponse::desde).toList()` para listas y `OrganizacionResponse.desde(organizacion)` para un solo registro. Por ahora solo `OrganizacionResponse` lo tiene; las demás lo recibirán junto con su servicio.
+La conversión de entidad a `Response` la hace un método estático `desde(entidad)` de cada `Response`, y el servicio lo llama: para listas recorre `findAll()` con un `for-each` y agrega cada `OrganizacionResponse.desde(organizacion)` a un `ArrayList`; para un solo registro llama directamente a `OrganizacionResponse.desde(organizacion)`. Por ahora lo tienen `OrganizacionResponse` y `VoluntarioResponse`; las demás lo recibirán junto con su servicio.
 
-El servicio no usa `@Transactional`. Las relaciones `@ManyToOne` son `LAZY` (ver [Relaciones `@ManyToOne`](#relaciones-manytoone)), y leer `actividad.getCoordinador().getNombre()` funciona porque Spring Boot activa por defecto `spring.jpa.open-in-view`: la sesión de Hibernate queda abierta durante toda la petición HTTP. Fuera de una petición, por ejemplo en un `CommandLineRunner` como `PersistenciaCheck`, esa misma lectura lanza `LazyInitializationException`.
+El servicio no usa `@Transactional`. Las relaciones `@ManyToOne` son `LAZY` (ver [Relaciones `@ManyToOne`](#relaciones-manytoone)), y leer `actividad.getCoordinador().getNombre()` funciona porque Spring Boot activa por defecto `spring.jpa.open-in-view`: la sesión de Hibernate queda abierta durante toda la petición HTTP. Fuera de una petición, esa misma lectura lanza `LazyInitializationException`.
 
 ---
 
 ## Servicios y controladores
 
-Cada recurso tiene un `@Service` en `service/` (sufijo `Servicio`) y un `@RestController` en `controller/` (sufijo `Controller`). Ambos reciben sus dependencias por constructor en campos `private final`; el constructor lo genera `@RequiredArgsConstructor` de Lombok. Lo mismo aplica a los componentes de `config/`.
+Cada recurso tiene un `@Service` en `service/` (sufijo `Servicio`) y un `@RestController` en `controller/` (sufijo `Controller`). Ambos reciben sus dependencias por constructor en campos `private final`; el constructor lo genera `@RequiredArgsConstructor` de Lombok.
 
 | Capa        | Responsabilidad                                                                                              |
 |-------------|--------------------------------------------------------------------------------------------------------------|
@@ -650,6 +650,21 @@ Cada recurso tiene un `@Service` en `service/` (sufijo `Servicio`) y un `@RestCo
 | `eliminarOrganizacion(id)` | `DELETE /api/organizaciones/{id}`   | 404 si no existe; 409 si tiene coordinadores o actividades (eliminación física).        |
 
 Los endpoints 8 a 10 (`/coordinadores`, `/actividades` y `/participacion` de una organización) quedan pendientes: devuelven `CoordinadorResponse`, `ActividadResponse` y el resumen de participación, cuyo mapeo pertenece a los servicios de esas entidades.
+
+### Voluntarios
+
+`VoluntarioController` y `VoluntarioServicio` implementan los endpoints 18 a 23 del [resumen de endpoints](#resumen-de-endpoints).
+
+| Método del servicio        | Endpoint                                 | Regla                                                                                   |
+|----------------------------|------------------------------------------|-----------------------------------------------------------------------------------------|
+| `listarVoluntarios()`      | `GET /api/voluntarios`                   | —                                                                                       |
+| `consultarVoluntario(id)`  | `GET /api/voluntarios/{id}`              | 404 si no existe.                                                                       |
+| `consultarPorDocumento(documento)` | `GET /api/voluntarios/documento/{documento}` | 404 si no existe.                                                               |
+| `crearVoluntario(...)`     | `POST /api/voluntarios`                  | 409 si el `documento` o el `email` ya existen.                                          |
+| `actualizarVoluntario(...)` | `PUT /api/voluntarios/{id}`             | 404 si no existe; 409 si el `documento` o el `email` pertenecen a otro voluntario.      |
+| `eliminarVoluntario(id)`   | `DELETE /api/voluntarios/{id}`           | 404 si no existe; 409 si tiene inscripciones en cualquier estado (eliminación física).  |
+
+Los endpoints 24 y 25 (`/inscripciones` y `/asistencias` de un voluntario) quedan pendientes: devuelven `InscripcionResponse` y `AsistenciaResponse`, cuyo mapeo pertenece a los servicios de esas entidades.
 
 ### Errores mientras no exista el manejador global
 

@@ -54,6 +54,16 @@ public class VoluntarioEntity
         this.telefono = telefono;
     }
 
+    // PUT reemplaza todos los campos editables
+    public void actualizar(String documento, String nombre, String apellido, String email, String telefono)
+    {
+        this.documento = documento;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.email = email;
+        this.telefono = telefono;
+    }
+
     @PrePersist
     protected void alCrear()
     {

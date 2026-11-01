@@ -11,7 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,9 +25,15 @@ public class OrganizacionServicio
 
     public List<OrganizacionResponse> listarOrganizaciones()
     {
-        return organizacionRepository.findAll().stream()
-                .map(OrganizacionResponse::desde)
-                .toList();
+        List<OrganizacionEntity> organizaciones = organizacionRepository.findAll();
+        List<OrganizacionResponse> respuesta = new ArrayList<>();
+
+        for (OrganizacionEntity organizacion : organizaciones)
+        {
+            respuesta.add(OrganizacionResponse.desde(organizacion));
+        }
+
+        return respuesta;
     }
 
     public OrganizacionResponse consultarOrganizacion(Integer id)
@@ -35,10 +43,15 @@ public class OrganizacionServicio
 
     public OrganizacionResponse consultarPorNit(String nit)
     {
-        OrganizacionEntity organizacion = organizacionRepository.findByNit(nit)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "No existe una organización con NIT " + nit));
-        return OrganizacionResponse.desde(organizacion);
+        Optional<OrganizacionEntity> organizacion = organizacionRepository.findByNit(nit);
+
+        if (organizacion.isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "No existe una organización con NIT " + nit);
+        }
+
+        return OrganizacionResponse.desde(organizacion.get());
     }
 
     public OrganizacionResponse crearOrganizacion(OrganizacionRequest request)
@@ -98,8 +111,14 @@ public class OrganizacionServicio
 
     private OrganizacionEntity buscarOrganizacion(Integer id)
     {
-        return organizacionRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "No existe la organización " + id));
+        Optional<OrganizacionEntity> organizacion = organizacionRepository.findById(id);
+
+        if (organizacion.isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "No existe la organización " + id);
+        }
+
+        return organizacion.get();
     }
 }
