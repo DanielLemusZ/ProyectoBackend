@@ -18,4 +18,12 @@ public interface InscripcionRepository extends JpaRepository<InscripcionEntity, 
     boolean existsByVoluntarioId(Integer voluntarioId);
 
     List<InscripcionEntity> findByActividadIdAndEstado(Integer actividadId, EstadoInscripcion estado);
+
+    List<InscripcionEntity> findByEstado(EstadoInscripcion estado);
+
+    List<InscripcionEntity> findByActividadId(Integer actividadId);
+
+    List<InscripcionEntity> findByVoluntarioId(Integer voluntarioId);
+
+    List<InscripcionEntity> findByVoluntarioIdAndEstado(Integer voluntarioId, EstadoInscripcion estado);
 }

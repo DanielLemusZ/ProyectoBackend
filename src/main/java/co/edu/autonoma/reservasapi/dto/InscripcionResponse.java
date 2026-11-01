@@ -1,6 +1,8 @@
 package co.edu.autonoma.reservasapi.dto;
 
 import co.edu.autonoma.reservasapi.entity.EstadoInscripcion;
+import co.edu.autonoma.reservasapi.entity.InscripcionEntity;
+import co.edu.autonoma.reservasapi.entity.VoluntarioEntity;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -43,5 +45,23 @@ public class InscripcionResponse
         this.estado = estado;
         this.fechaInscripcion = fechaInscripcion;
         this.fechaCancelacion = fechaCancelacion;
+    }
+
+    // Conversión de la entidad a la respuesta; la usa InscripcionServicio
+    public static InscripcionResponse desde(InscripcionEntity inscripcion)
+    {
+        VoluntarioEntity voluntario = inscripcion.getVoluntario();
+
+        return new InscripcionResponse(
+                inscripcion.getId(),
+                inscripcion.getActividad().getId(),
+                inscripcion.getActividad().getTitulo(),
+                voluntario.getId(),
+                voluntario.getNombre() + " " + voluntario.getApellido(),
+                inscripcion.getClaveIdempotencia(),
+                inscripcion.getEstado(),
+                inscripcion.getFechaInscripcion(),
+                inscripcion.getFechaCancelacion()
+        );
     }
 }

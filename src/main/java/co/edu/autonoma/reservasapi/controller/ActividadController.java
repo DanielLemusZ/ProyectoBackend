@@ -4,8 +4,11 @@ import co.edu.autonoma.reservasapi.dto.ActividadActualizacionRequest;
 import co.edu.autonoma.reservasapi.dto.ActividadEstadoRequest;
 import co.edu.autonoma.reservasapi.dto.ActividadRequest;
 import co.edu.autonoma.reservasapi.dto.ActividadResponse;
+import co.edu.autonoma.reservasapi.dto.InscripcionResponse;
 import co.edu.autonoma.reservasapi.entity.EstadoActividad;
+import co.edu.autonoma.reservasapi.entity.EstadoInscripcion;
 import co.edu.autonoma.reservasapi.service.ActividadServicio;
+import co.edu.autonoma.reservasapi.service.InscripcionServicio;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,6 +32,7 @@ import java.util.List;
 public class ActividadController
 {
     private final ActividadServicio actividadServicio;
+    private final InscripcionServicio inscripcionServicio;
 
     @GetMapping
     public List<ActividadResponse> listarActividades(@RequestParam(required = false) EstadoActividad estado)
@@ -68,5 +72,12 @@ public class ActividadController
     public ActividadResponse cancelarActividad(@PathVariable Integer id)
     {
         return actividadServicio.cancelarActividad(id);
+    }
+
+    @GetMapping("/{id}/inscripciones")
+    public List<InscripcionResponse> listarInscripciones(@PathVariable Integer id,
+                                                         @RequestParam(required = false) EstadoInscripcion estado)
+    {
+        return inscripcionServicio.listarPorActividad(id, estado);
     }
 }

@@ -33,8 +33,8 @@ Seguimiento de lo implementado y lo pendiente. Actualizar esta tabla con cada av
 | Contrato de la API REST                            | Hecho     | Ver [Contrato de la API REST](#contrato-de-la-api-rest).             |
 | DTOs de petición y respuesta                       | Hecho     | Ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta).   |
 | Lombok en entidades, `Response` e inyección de dependencias | Hecho | Entidades sin setters, `Response` inmutables y `@RequiredArgsConstructor` en servicios y controladores. Ver [Convenciones del código](#convenciones-del-código). |
-| Servicios con reglas de negocio (RN-01 a RN-06)    | En progreso | `OrganizacionServicio`, `CoordinadorServicio`, `VoluntarioServicio` y `ActividadServicio` hechos. Ver [Servicios y controladores](#servicios-y-controladores). |
-| Controladores del contrato HTTP                    | En progreso | `OrganizacionController` (endpoints 2 a 9), `CoordinadorController` (endpoints 11 a 17), `VoluntarioController` (endpoints 18 a 23) y `ActividadController` (endpoints 26 a 31) hechos. Faltan los demás del [resumen de endpoints](#resumen-de-endpoints). |
+| Servicios con reglas de negocio (RN-01 a RN-06)    | En progreso | `OrganizacionServicio`, `CoordinadorServicio`, `VoluntarioServicio`, `ActividadServicio` e `InscripcionServicio` hechos. Ver [Servicios y controladores](#servicios-y-controladores). |
+| Controladores del contrato HTTP                    | En progreso | `OrganizacionController` (endpoints 2 a 9), `CoordinadorController` (endpoints 11 a 17), `VoluntarioController` (endpoints 18 a 24), `ActividadController` (endpoints 26 a 32) e `InscripcionController` (endpoints 34 a 36 y 38) hechos. Faltan los demás del [resumen de endpoints](#resumen-de-endpoints). |
 | Manejo de errores (400, 404, 409)                  | Pendiente | Los códigos ya se responden; falta el formato común del cuerpo de error. Ver [Códigos de estado HTTP](#códigos-de-estado-http). |
 
 ## Estructura del proyecto
@@ -47,7 +47,8 @@ src/main/java/co/edu/autonoma/reservasapi/
 │   ├── OrganizacionController.java   # /api/organizaciones
 │   ├── CoordinadorController.java    # /api/coordinadores
 │   ├── VoluntarioController.java     # /api/voluntarios
-│   └── ActividadController.java      # /api/actividades
+│   ├── ActividadController.java      # /api/actividades
+│   └── InscripcionController.java    # /api/inscripciones
 ├── dto/
 │   ├── OrganizacionRequest.java                # record: POST y PUT de organizaciones
 │   ├── CoordinadorRequest.java                 # record: POST de coordinadores
@@ -89,7 +90,8 @@ src/main/java/co/edu/autonoma/reservasapi/
     ├── OrganizacionServicio.java     # Reglas y mapeo de organizaciones
     ├── CoordinadorServicio.java      # Reglas y mapeo de coordinadores
     ├── VoluntarioServicio.java       # Reglas y mapeo de voluntarios
-    └── ActividadServicio.java        # Reglas, transiciones de estado y mapeo de actividades
+    ├── ActividadServicio.java        # Reglas, transiciones de estado y mapeo de actividades
+    └── InscripcionServicio.java      # Reglas RN-01, RN-02, RN-03 y RN-06, y mapeo de inscripciones
 ```
 
 | Paquete       | Contenido                                                               |
@@ -146,10 +148,16 @@ Si la consola muestra `password authentication failed for user "postgres"`, la v
 | PUT    | `/api/actividades/{id}`         | Reemplaza los datos. 404 si no existe; 409 si tiene inscripciones `CONFIRMADA` o está `CANCELADA` o `FINALIZADA`. | `ActividadResponse` |
 | PATCH  | `/api/actividades/{id}/estado`  | Cambia el estado. 400 si se pide `CANCELADA`; 404 si no existe; 409 si la transición no está permitida. | `ActividadResponse` |
 | DELETE | `/api/actividades/{id}`         | Cancelación lógica de la actividad y sus inscripciones. 404 si no existe; 409 si está `FINALIZADA` o tiene asistencias. | `200` con la `ActividadResponse` |
+| GET    | `/api/voluntarios/{id}/inscripciones?estado={estado}` | Lista las inscripciones del voluntario. 400 si el estado no es válido; 404 si no existe. | `List<InscripcionResponse>` |
+| GET    | `/api/actividades/{id}/inscripciones?estado={estado}` | Lista las inscripciones de la actividad. 400 si el estado no es válido; 404 si no existe. | `List<InscripcionResponse>` |
+| GET    | `/api/inscripciones?estado={estado}` | Lista las inscripciones, con filtro opcional. 400 si el estado no es válido. | `List<InscripcionResponse>`                |
+| GET    | `/api/inscripciones/{id}`       | Consulta una inscripción. 404 si no existe.                  | `InscripcionResponse`                                  |
+| POST   | `/api/inscripciones`            | Inscribe a un voluntario (RN-06, RN-03, RN-02 y RN-01). 404 si el voluntario o la actividad no existen; 409 si se viola una regla. | `201` con la `InscripcionResponse` creada; `200` si la clave ya existe |
+| DELETE | `/api/inscripciones/{id}`       | Cancelación lógica. 404 si no existe; 409 si ya pasó `fechaCierre`. | `200` con la `InscripcionResponse`                |
 
 ## Contrato de la API REST
 
-Diseño de las peticiones HTTP de la API. Están implementados `GET /api/estado`, los endpoints 2 a 9 de organizaciones, los endpoints 11 a 17 de coordinadores, los endpoints 18 a 23 de voluntarios y los endpoints 26 a 31 de actividades; los demás están pendientes. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
+Diseño de las peticiones HTTP de la API. Están implementados `GET /api/estado`, los endpoints 2 a 9 de organizaciones, los endpoints 11 a 17 de coordinadores, los endpoints 18 a 24 de voluntarios, los endpoints 26 a 32 de actividades y los endpoints 34 a 36 y 38 de inscripciones; los demás están pendientes. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
 
 ### Resumen de endpoints
 
@@ -180,7 +188,7 @@ La columna Estado indica si el endpoint ya está implementado (controlador y ser
 | 21 | `POST`   | `/api/voluntarios`                                   | `VoluntarioRequest`                | `VoluntarioResponse`                  | 201   | Hecho     |
 | 22 | `PUT`    | `/api/voluntarios/{id}`                              | `VoluntarioRequest`                | `VoluntarioResponse`                  | 200   | Hecho     |
 | 23 | `DELETE` | `/api/voluntarios/{id}`                              | —                                  | —                                     | 204   | Hecho     |
-| 24 | `GET`    | `/api/voluntarios/{id}/inscripciones?estado={estado}`| —                                  | `List<InscripcionResponse>`           | 200   | Pendiente |
+| 24 | `GET`    | `/api/voluntarios/{id}/inscripciones?estado={estado}`| —                                  | `List<InscripcionResponse>`           | 200   | Hecho     |
 | 25 | `GET`    | `/api/voluntarios/{id}/asistencias`                  | —                                  | `List<AsistenciaResponse>`            | 200   | Pendiente |
 | 26 | `GET`    | `/api/actividades?estado={estado}`                   | —                                  | `List<ActividadResponse>`             | 200   | Hecho     |
 | 27 | `GET`    | `/api/actividades/{id}`                              | —                                  | `ActividadResponse`                   | 200   | Hecho     |
@@ -188,13 +196,13 @@ La columna Estado indica si el endpoint ya está implementado (controlador y ser
 | 29 | `PUT`    | `/api/actividades/{id}`                              | `ActividadActualizacionRequest`    | `ActividadResponse`                   | 200   | Hecho     |
 | 30 | `PATCH`  | `/api/actividades/{id}/estado`                       | `ActividadEstadoRequest`           | `ActividadResponse`                   | 200   | Hecho     |
 | 31 | `DELETE` | `/api/actividades/{id}`                              | —                                  | `ActividadResponse`                   | 200   | Hecho     |
-| 32 | `GET`    | `/api/actividades/{id}/inscripciones?estado={estado}`| —                                  | `List<InscripcionResponse>`           | 200   | Pendiente |
+| 32 | `GET`    | `/api/actividades/{id}/inscripciones?estado={estado}`| —                                  | `List<InscripcionResponse>`           | 200   | Hecho     |
 | 33 | `GET`    | `/api/actividades/{id}/asistencias`                  | —                                  | `List<AsistenciaResponse>`            | 200   | Pendiente |
-| 34 | `GET`    | `/api/inscripciones?estado={estado}`                 | —                                  | `List<InscripcionResponse>`           | 200   | Pendiente |
-| 35 | `GET`    | `/api/inscripciones/{id}`                            | —                                  | `InscripcionResponse`                 | 200   | Pendiente |
-| 36 | `POST`   | `/api/inscripciones`                                 | `InscripcionRequest`               | `InscripcionResponse`                 | 201 (200 si la clave ya existe) | Pendiente |
+| 34 | `GET`    | `/api/inscripciones?estado={estado}`                 | —                                  | `List<InscripcionResponse>`           | 200   | Hecho     |
+| 35 | `GET`    | `/api/inscripciones/{id}`                            | —                                  | `InscripcionResponse`                 | 200   | Hecho     |
+| 36 | `POST`   | `/api/inscripciones`                                 | `InscripcionRequest`               | `InscripcionResponse`                 | 201 (200 si la clave ya existe) | Hecho     |
 | 37 | `PATCH`  | `/api/inscripciones/{id}/asistencia`                 | `AsistenciaRequest`                | `AsistenciaResponse`                  | 200   | Pendiente |
-| 38 | `DELETE` | `/api/inscripciones/{id}`                            | —                                  | `InscripcionResponse`                 | 200   | Pendiente |
+| 38 | `DELETE` | `/api/inscripciones/{id}`                            | —                                  | `InscripcionResponse`                 | 200   | Hecho     |
 | 39 | `GET`    | `/api/asistencias`                                   | —                                  | `List<AsistenciaResponse>`            | 200   | Pendiente |
 | 40 | `GET`    | `/api/asistencias/{id}`                              | —                                  | `AsistenciaResponse`                  | 200   | Pendiente |
 | 41 | `PUT`    | `/api/asistencias/{id}`                              | `AsistenciaActualizacionRequest`   | `AsistenciaResponse`                  | 200   | Pendiente |
@@ -220,11 +228,11 @@ El enunciado del proyecto exige estas seis operaciones. Todas están incluidas e
 | Verbo    | Ruta                                  | Responsabilidad según el enunciado                  | Cómo se cumple                                                             | Estado    |
 |----------|---------------------------------------|-----------------------------------------------------|----------------------------------------------------------------------------|-----------|
 | `GET`    | `/api/actividades`                    | Consulta abiertas.                                  | Sin filtro devuelve las actividades `ABIERTA` con `fechaCierre` futura.    | Hecho     |
-| `GET`    | `/api/actividades/{id}/inscripciones` | Consulta del coordinador.                           | Inscripciones de la actividad, con filtro opcional `?estado=`.             | Pendiente |
-| `POST`   | `/api/inscripciones`                  | Inscribe sin duplicar y controla cupo.              | Aplica RN-06, RN-03, RN-02 y RN-01, en ese orden.                          | Pendiente |
+| `GET`    | `/api/actividades/{id}/inscripciones` | Consulta del coordinador.                           | Inscripciones de la actividad, con filtro opcional `?estado=`.             | Hecho     |
+| `POST`   | `/api/inscripciones`                  | Inscribe sin duplicar y controla cupo.              | Aplica RN-06, RN-03, RN-02 y RN-01, en ese orden.                          | Hecho     |
 | `PUT`    | `/api/actividades/{id}`               | Reemplaza actividad antes de recibir inscripciones. | Responde 409 si la actividad ya tiene inscripciones `CONFIRMADA`.          | Hecho     |
 | `PATCH`  | `/api/inscripciones/{id}/asistencia`  | Registra asistencia.                                | Crea la asistencia de la inscripción aplicando RN-04 y RN-05.              | Pendiente |
-| `DELETE` | `/api/inscripciones/{id}`             | Cancela/elimina inscripción antes del cierre.       | Cancelación lógica; responde 409 si ya pasó `fechaCierre`.                 | Pendiente |
+| `DELETE` | `/api/inscripciones/{id}`             | Cancela/elimina inscripción antes del cierre.       | Cancelación lógica; responde 409 si ya pasó `fechaCierre`.                 | Hecho     |
 
 ---
 
@@ -427,7 +435,7 @@ erDiagram
 
 | Regla | Cómo se soporta                                                                                                                                                  |
 |-------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| RN-01 | `actividad.cupo_maximo` con `CHECK > 0`. El servicio cuenta las inscripciones `CONFIRMADA` antes de insertar, bloqueando la actividad (`SELECT ... FOR UPDATE`). |
+| RN-01 | `actividad.cupo_maximo` con `CHECK > 0`. El servicio cuenta las inscripciones `CONFIRMADA` antes de insertar, sin bloqueo (ver [Inscripciones](#inscripciones)). |
 | RN-02 | Índice único parcial `(actividad_id, voluntario_id) WHERE estado = 'CONFIRMADA'`: solo puede existir una inscripción activa por voluntario y actividad.          |
 | RN-03 | `actividad.fecha_cierre` y `actividad.estado`. El servicio rechaza la inscripción si `NOW() > fecha_cierre` o si el cupo está completo (pasa a `CERRADA`). Al consultar actividades, las que siguen `ABIERTA` con `fecha_cierre` vencida pasan a `CERRADA`. |
 | RN-04 | `asistencia.inscripcion_id` es FK y único. El servicio valida que la inscripción esté en estado `CONFIRMADA` antes de registrar.                                 |
@@ -564,6 +572,9 @@ Spring Data genera la consulta a partir del nombre del método, usando los atrib
 | `InscripcionRepository`  | `existsByActividadIdAndVoluntarioIdAndEstado(Integer, Integer, EstadoInscripcion)` | `select id from inscripcion where actividad_id = ? and voluntario_id = ? and estado = ?` | RN-02: inscripción activa duplicada |
 | `InscripcionRepository`  | `existsByVoluntarioId(Integer)`                                            | `select id from inscripcion where voluntario_id = ?`                             | `DELETE` de voluntario: 409 si tiene inscripciones |
 | `InscripcionRepository`  | `findByActividadIdAndEstado(Integer, EstadoInscripcion)`                   | `select ... from inscripcion where actividad_id = ? and estado = ?`              | `DELETE` de actividad: inscripciones por cancelar |
+| `InscripcionRepository`  | `findByEstado(EstadoInscripcion)`                                          | `select ... from inscripcion where estado = ?`                                   | Filtro `?estado=` de `GET /api/inscripciones` |
+| `InscripcionRepository`  | `findByActividadId(Integer)`, `findByVoluntarioId(Integer)`                | `select ... from inscripcion where actividad_id = ?` (o `voluntario_id = ?`)     | Inscripciones de una actividad o de un voluntario |
+| `InscripcionRepository`  | `findByVoluntarioIdAndEstado(Integer, EstadoInscripcion)`                  | `select ... from inscripcion where voluntario_id = ? and estado = ?`             | Inscripciones de un voluntario con filtro `?estado=` |
 | `AsistenciaRepository`   | `existsByInscripcionId(Integer)`                                           | `select id from asistencia where inscripcion_id = ?`                             | RN-04: una asistencia por inscripción |
 | `AsistenciaRepository`   | `existsByCoordinadorId(Integer)`                                           | `select id from asistencia where coordinador_id = ?`                             | `DELETE` de coordinador: 409 si tiene asistencias |
 | `AsistenciaRepository`   | `existsByInscripcionActividadId(Integer)`                                  | `select id from asistencia join inscripcion ... where actividad_id = ?`          | `DELETE` de actividad: 409 si tiene asistencias |
@@ -649,7 +660,7 @@ Lo que no se puede expresar con anotaciones de un solo campo lo valida el servic
 
 ### Mapeo entidad a respuesta
 
-La conversión de entidad a `Response` la hace un método estático `desde(entidad)` de cada `Response`, y el servicio lo llama: para listas recorre `findAll()` con un `for-each` y agrega cada `OrganizacionResponse.desde(organizacion)` a un `ArrayList`; para un solo registro llama directamente a `OrganizacionResponse.desde(organizacion)`. Por ahora lo tienen `OrganizacionResponse`, `CoordinadorResponse`, `VoluntarioResponse` y `ActividadResponse`; las demás lo recibirán junto con su servicio. `ActividadResponse` recibe además los cupos ocupados (`desde(actividad, cuposOcupados)`), porque los cuenta el servicio y la entidad no tiene sus inscripciones.
+La conversión de entidad a `Response` la hace un método estático `desde(entidad)` de cada `Response`, y el servicio lo llama: para listas recorre `findAll()` con un `for-each` y agrega cada `OrganizacionResponse.desde(organizacion)` a un `ArrayList`; para un solo registro llama directamente a `OrganizacionResponse.desde(organizacion)`. Por ahora lo tienen `OrganizacionResponse`, `CoordinadorResponse`, `VoluntarioResponse`, `ActividadResponse` e `InscripcionResponse`; las demás lo recibirán junto con su servicio. `ActividadResponse` recibe además los cupos ocupados (`desde(actividad, cuposOcupados)`), porque los cuenta el servicio y la entidad no tiene sus inscripciones.
 
 El servicio no usa `@Transactional`. Las relaciones `@ManyToOne` son `LAZY` (ver [Relaciones `@ManyToOne`](#relaciones-manytoone)), y leer `actividad.getCoordinador().getNombre()` funciona porque Spring Boot activa por defecto `spring.jpa.open-in-view`: la sesión de Hibernate queda abierta durante toda la petición HTTP. Fuera de una petición, esa misma lectura lanza `LazyInitializationException`.
 
@@ -661,7 +672,7 @@ Cada recurso tiene un `@Service` en `service/` (sufijo `Servicio`) y un `@RestCo
 
 | Capa        | Responsabilidad                                                                                              |
 |-------------|--------------------------------------------------------------------------------------------------------------|
-| Controlador | Define la ruta, valida el cuerpo con `@Valid`, delega en el servicio y devuelve el DTO directamente. El código de éxito distinto de 200 se fija con `@ResponseStatus`: `CREATED` (201) en `POST` y `NO_CONTENT` (204) en los `DELETE` físicos. No usa repositorios ni entidades. |
+| Controlador | Define la ruta, valida el cuerpo con `@Valid`, delega en el servicio y devuelve el DTO directamente. El código de éxito distinto de 200 se fija con `@ResponseStatus`: `CREATED` (201) en `POST` y `NO_CONTENT` (204) en los `DELETE` físicos. `POST /api/inscripciones` usa `ResponseEntity`, porque responde 201 o 200 según la clave de idempotencia. No usa repositorios ni entidades. |
 | Servicio    | Busca las entidades, aplica las reglas del contrato, guarda y convierte el resultado con `Response.desde(...)`. No usa `@Transactional`: cada llamada al repositorio se ejecuta en su propia transacción. |
 
 ### Organizaciones
@@ -708,7 +719,7 @@ El endpoint 17 (`/actividades` de un coordinador) está en `CoordinadorControlle
 | `actualizarVoluntario(...)` | `PUT /api/voluntarios/{id}`             | 404 si no existe; 409 si el `documento` o el `email` pertenecen a otro voluntario.      |
 | `eliminarVoluntario(id)`   | `DELETE /api/voluntarios/{id}`           | 404 si no existe; 409 si tiene inscripciones en cualquier estado (eliminación física).  |
 
-Los endpoints 24 y 25 (`/inscripciones` y `/asistencias` de un voluntario) quedan pendientes: devuelven `InscripcionResponse` y `AsistenciaResponse`, cuyo mapeo pertenece a los servicios de esas entidades.
+El endpoint 24 (`/inscripciones` de un voluntario) está en `VoluntarioController` y delega en `InscripcionServicio` (ver [Inscripciones](#inscripciones)). El endpoint 25 (`/asistencias` de un voluntario) queda pendiente: devuelve `AsistenciaResponse`, cuyo mapeo pertenece al servicio de asistencias.
 
 ### Actividades
 
@@ -741,7 +752,41 @@ Cualquier otra transición responde 409, incluido pedir el estado que la activid
 
 **Cancelación (`DELETE`):** es lógica. La actividad pasa a `CANCELADA` y sus inscripciones `CONFIRMADA` pasan a `CANCELADA` con `fechaCancelacion`. Como los servicios no usan `@Transactional`, cada guardado es independiente: se cancelan primero las inscripciones y al final la actividad. Si algo falla a mitad de camino, la actividad sigue sin cancelar y repetir el `DELETE` completa las inscripciones que falten.
 
-Los endpoints 32 y 33 (`/inscripciones` y `/asistencias` de una actividad) quedan pendientes: devuelven `InscripcionResponse` y `AsistenciaResponse`, cuyo mapeo pertenece a los servicios de esas entidades.
+El endpoint 32 (`/inscripciones` de una actividad) está en `ActividadController` y delega en `InscripcionServicio` (ver [Inscripciones](#inscripciones)). El endpoint 33 (`/asistencias` de una actividad) queda pendiente: devuelve `AsistenciaResponse`, cuyo mapeo pertenece al servicio de asistencias.
+
+### Inscripciones
+
+`InscripcionController` y `InscripcionServicio` implementan los endpoints 34 a 36 y 38 del [resumen de endpoints](#resumen-de-endpoints). `InscripcionServicio` también atiende los endpoints 24 y 32. El endpoint 37 (`PATCH /api/inscripciones/{id}/asistencia`) queda pendiente: devuelve `AsistenciaResponse`, cuyo mapeo pertenece al servicio de asistencias.
+
+| Método del servicio        | Endpoint                                 | Regla                                                                                   |
+|----------------------------|------------------------------------------|-----------------------------------------------------------------------------------------|
+| `listarInscripciones(estado)` | `GET /api/inscripciones?estado={estado}` | Sin filtro, todas. 400 si el estado no es válido.                                    |
+| `listarPorActividad(actividadId, estado)` | `GET /api/actividades/{id}/inscripciones?estado={estado}` | 400 si el estado no es válido; 404 si la actividad no existe.    |
+| `listarPorVoluntario(voluntarioId, estado)` | `GET /api/voluntarios/{id}/inscripciones?estado={estado}` | 400 si el estado no es válido; 404 si el voluntario no existe. |
+| `consultarInscripcion(id)` | `GET /api/inscripciones/{id}`            | 404 si no existe.                                                                       |
+| `buscarRepetida(...)`      | `POST /api/inscripciones`                | RN-06: devuelve la inscripción con esa clave (200); 409 si la clave se usó con otros datos. |
+| `crearInscripcion(...)`    | `POST /api/inscripciones`                | Si la clave es nueva: 404, RN-03, RN-02 y RN-01 (409), y 201 al guardar.                |
+| `cancelarInscripcion(id)`  | `DELETE /api/inscripciones/{id}`         | 404 si no existe; 409 si ya pasó `fechaCierre`. Si ya estaba `CANCELADA`, responde 200 con el estado actual. |
+
+**Orden de validación en `POST`:**
+
+1. Cuerpo inválido: 400.
+2. RN-06: con la misma clave y los mismos datos responde 200 con la inscripción existente, aunque esté `CANCELADA`; con otros datos responde 409.
+3. El voluntario y la actividad deben existir: 404.
+4. RN-03: la actividad debe estar `ABIERTA` y la fecha actual no puede superar `fechaCierre`: 409.
+5. RN-02: el voluntario no puede tener una inscripción `CONFIRMADA` en la actividad: 409.
+6. RN-01: las inscripciones `CONFIRMADA` deben ser menos que `cupoMaximo`: 409.
+7. Se guarda la inscripción y responde 201. Si con ella se completa el cupo, la actividad pasa a `CERRADA`.
+
+**Cancelación (`DELETE`):** es lógica y libera el cupo, pero no reabre la actividad: si estaba `CERRADA`, sigue así hasta que se reabra con `PATCH /api/actividades/{id}/estado`. Para volver a inscribirse se usa una clave nueva.
+
+**Limitación con peticiones simultáneas:** los servicios no usan `@Transactional` ni bloqueos, así que las reglas se comprueban y la inscripción se guarda en pasos separados. Con peticiones simultáneas pueden ocurrir estos casos:
+
+| Regla | Qué puede pasar                                                                                         |
+|-------|---------------------------------------------------------------------------------------------------------|
+| RN-01 | Varias inscripciones pasan la comprobación a la vez y se supera `cupoMaximo`.                           |
+| RN-02 | El mismo voluntario queda con varias inscripciones `CONFIRMADA` en la actividad, si no existe en la base el índice único parcial (ver [Restricciones que las entidades no cubren](#restricciones-que-las-entidades-no-cubren)). |
+| RN-06 | No se crean filas duplicadas, porque `clave_idempotencia` es única, pero las peticiones repetidas responden 500 en lugar de 200. |
 
 ### Errores mientras no exista el manejador global
 

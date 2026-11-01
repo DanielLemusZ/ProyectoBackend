@@ -1,7 +1,10 @@
 package co.edu.autonoma.reservasapi.controller;
 
+import co.edu.autonoma.reservasapi.dto.InscripcionResponse;
 import co.edu.autonoma.reservasapi.dto.VoluntarioRequest;
 import co.edu.autonoma.reservasapi.dto.VoluntarioResponse;
+import co.edu.autonoma.reservasapi.entity.EstadoInscripcion;
+import co.edu.autonoma.reservasapi.service.InscripcionServicio;
 import co.edu.autonoma.reservasapi.service.VoluntarioServicio;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,6 +28,7 @@ import java.util.List;
 public class VoluntarioController
 {
     private final VoluntarioServicio voluntarioServicio;
+    private final InscripcionServicio inscripcionServicio;
 
     @GetMapping
     public List<VoluntarioResponse> listarVoluntarios()
@@ -62,5 +67,12 @@ public class VoluntarioController
     public void eliminarVoluntario(@PathVariable Integer id)
     {
         voluntarioServicio.eliminarVoluntario(id);
+    }
+
+    @GetMapping("/{id}/inscripciones")
+    public List<InscripcionResponse> listarInscripciones(@PathVariable Integer id,
+                                                         @RequestParam(required = false) EstadoInscripcion estado)
+    {
+        return inscripcionServicio.listarPorVoluntario(id, estado);
     }
 }
