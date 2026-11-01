@@ -8,4 +8,7 @@ public interface AsistenciaRepository extends JpaRepository<AsistenciaEntity, In
     boolean existsByInscripcionId(Integer inscripcionId);
 
     boolean existsByCoordinadorId(Integer coordinadorId);
+
+    // La actividad se alcanza a través de la inscripción
+    boolean existsByInscripcionActividadId(Integer actividadId);
 }

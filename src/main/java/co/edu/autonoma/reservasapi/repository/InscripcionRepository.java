@@ -4,6 +4,7 @@ import co.edu.autonoma.reservasapi.entity.EstadoInscripcion;
 import co.edu.autonoma.reservasapi.entity.InscripcionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface InscripcionRepository extends JpaRepository<InscripcionEntity, Integer>
@@ -15,4 +16,6 @@ public interface InscripcionRepository extends JpaRepository<InscripcionEntity, 
     boolean existsByActividadIdAndVoluntarioIdAndEstado(Integer actividadId, Integer voluntarioId, EstadoInscripcion estado);
 
     boolean existsByVoluntarioId(Integer voluntarioId);
+
+    List<InscripcionEntity> findByActividadIdAndEstado(Integer actividadId, EstadoInscripcion estado);
 }

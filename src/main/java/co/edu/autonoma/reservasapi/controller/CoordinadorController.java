@@ -1,8 +1,10 @@
 package co.edu.autonoma.reservasapi.controller;
 
+import co.edu.autonoma.reservasapi.dto.ActividadResponse;
 import co.edu.autonoma.reservasapi.dto.CoordinadorActualizacionRequest;
 import co.edu.autonoma.reservasapi.dto.CoordinadorRequest;
 import co.edu.autonoma.reservasapi.dto.CoordinadorResponse;
+import co.edu.autonoma.reservasapi.service.ActividadServicio;
 import co.edu.autonoma.reservasapi.service.CoordinadorServicio;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import java.util.List;
 public class CoordinadorController
 {
     private final CoordinadorServicio coordinadorServicio;
+    private final ActividadServicio actividadServicio;
 
     @GetMapping
     public List<CoordinadorResponse> listarCoordinadores()
@@ -63,5 +66,11 @@ public class CoordinadorController
     public void eliminarCoordinador(@PathVariable Integer id)
     {
         coordinadorServicio.eliminarCoordinador(id);
+    }
+
+    @GetMapping("/{id}/actividades")
+    public List<ActividadResponse> listarActividades(@PathVariable Integer id)
+    {
+        return actividadServicio.listarPorCoordinador(id);
     }
 }

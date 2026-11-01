@@ -1,5 +1,7 @@
 package co.edu.autonoma.reservasapi.dto;
 
+import co.edu.autonoma.reservasapi.entity.ActividadEntity;
+import co.edu.autonoma.reservasapi.entity.CoordinadorEntity;
 import co.edu.autonoma.reservasapi.entity.EstadoActividad;
 import lombok.Getter;
 
@@ -69,5 +71,32 @@ public class ActividadResponse
         this.estado = estado;
         this.fechaCreacion = fechaCreacion;
         this.fechaActualizacion = fechaActualizacion;
+    }
+
+    // Conversión de la entidad a la respuesta; la usa ActividadServicio.
+    // cuposOcupados lo cuenta el servicio, porque la entidad no tiene sus inscripciones.
+    public static ActividadResponse desde(ActividadEntity actividad, long cuposOcupados)
+    {
+        CoordinadorEntity coordinador = actividad.getCoordinador();
+
+        return new ActividadResponse(
+                actividad.getId(),
+                actividad.getOrganizacion().getId(),
+                actividad.getOrganizacion().getNombre(),
+                coordinador.getId(),
+                coordinador.getNombre() + " " + coordinador.getApellido(),
+                actividad.getTitulo(),
+                actividad.getDescripcion(),
+                actividad.getUbicacion(),
+                actividad.getFechaInicio(),
+                actividad.getFechaFin(),
+                actividad.getFechaCierre(),
+                actividad.getCupoMaximo(),
+                cuposOcupados,
+                actividad.getCupoMaximo() - cuposOcupados,
+                actividad.getEstado(),
+                actividad.getFechaCreacion(),
+                actividad.getFechaActualizacion()
+        );
     }
 }

@@ -1,8 +1,10 @@
 package co.edu.autonoma.reservasapi.controller;
 
+import co.edu.autonoma.reservasapi.dto.ActividadResponse;
 import co.edu.autonoma.reservasapi.dto.CoordinadorResponse;
 import co.edu.autonoma.reservasapi.dto.OrganizacionRequest;
 import co.edu.autonoma.reservasapi.dto.OrganizacionResponse;
+import co.edu.autonoma.reservasapi.service.ActividadServicio;
 import co.edu.autonoma.reservasapi.service.CoordinadorServicio;
 import co.edu.autonoma.reservasapi.service.OrganizacionServicio;
 import jakarta.validation.Valid;
@@ -27,6 +29,7 @@ public class OrganizacionController
 {
     private final OrganizacionServicio organizacionServicio;
     private final CoordinadorServicio coordinadorServicio;
+    private final ActividadServicio actividadServicio;
 
     @GetMapping
     public List<OrganizacionResponse> listarOrganizaciones()
@@ -71,5 +74,11 @@ public class OrganizacionController
     public List<CoordinadorResponse> listarCoordinadores(@PathVariable Integer id)
     {
         return coordinadorServicio.listarPorOrganizacion(id);
+    }
+
+    @GetMapping("/{id}/actividades")
+    public List<ActividadResponse> listarActividades(@PathVariable Integer id)
+    {
+        return actividadServicio.listarPorOrganizacion(id);
     }
 }
