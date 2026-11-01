@@ -16,4 +16,6 @@ public interface ActividadRepository extends JpaRepository<ActividadEntity, Inte
     List<ActividadEntity> findByFechaCierreAfter(LocalDateTime fecha);
 
     boolean existsByOrganizacionId(Integer organizacionId);
+
+    boolean existsByCoordinadorId(Integer coordinadorId);
 }

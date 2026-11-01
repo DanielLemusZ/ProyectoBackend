@@ -1,5 +1,6 @@
 package co.edu.autonoma.reservasapi.dto;
 
+import co.edu.autonoma.reservasapi.entity.CoordinadorEntity;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -36,5 +37,20 @@ public class CoordinadorResponse
         this.email = email;
         this.telefono = telefono;
         this.fechaCreacion = fechaCreacion;
+    }
+
+    // Conversión de la entidad a la respuesta; la usa CoordinadorServicio
+    public static CoordinadorResponse desde(CoordinadorEntity coordinador)
+    {
+        return new CoordinadorResponse(
+                coordinador.getId(),
+                coordinador.getOrganizacion().getId(),
+                coordinador.getOrganizacion().getNombre(),
+                coordinador.getNombre(),
+                coordinador.getApellido(),
+                coordinador.getEmail(),
+                coordinador.getTelefono(),
+                coordinador.getFechaCreacion()
+        );
     }
 }

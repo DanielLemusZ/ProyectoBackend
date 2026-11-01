@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AsistenciaRepository extends JpaRepository<AsistenciaEntity, Integer>
 {
     boolean existsByInscripcionId(Integer inscripcionId);
+
+    boolean existsByCoordinadorId(Integer coordinadorId);
 }

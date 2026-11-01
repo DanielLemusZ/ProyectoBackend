@@ -59,6 +59,15 @@ public class CoordinadorEntity
         this.telefono = telefono;
     }
 
+    // PUT reemplaza los datos personales; la organización no cambia
+    public void actualizar(String nombre, String apellido, String email, String telefono)
+    {
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.email = email;
+        this.telefono = telefono;
+    }
+
     @PrePersist
     protected void alCrear()
     {

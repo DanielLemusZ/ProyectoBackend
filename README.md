@@ -33,8 +33,8 @@ Seguimiento de lo implementado y lo pendiente. Actualizar esta tabla con cada av
 | Contrato de la API REST                            | Hecho     | Ver [Contrato de la API REST](#contrato-de-la-api-rest).             |
 | DTOs de petición y respuesta                       | Hecho     | Ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta).   |
 | Lombok en entidades, `Response` e inyección de dependencias | Hecho | Entidades sin setters, `Response` inmutables y `@RequiredArgsConstructor` en servicios y controladores. Ver [Convenciones del código](#convenciones-del-código). |
-| Servicios con reglas de negocio (RN-01 a RN-06)    | En progreso | `OrganizacionServicio` y `VoluntarioServicio` hechos. Ver [Servicios y controladores](#servicios-y-controladores). |
-| Controladores del contrato HTTP                    | En progreso | `OrganizacionController` (endpoints 2 a 7) y `VoluntarioController` (endpoints 18 a 23) hechos. Faltan los demás del [resumen de endpoints](#resumen-de-endpoints). |
+| Servicios con reglas de negocio (RN-01 a RN-06)    | En progreso | `OrganizacionServicio`, `CoordinadorServicio` y `VoluntarioServicio` hechos. Ver [Servicios y controladores](#servicios-y-controladores). |
+| Controladores del contrato HTTP                    | En progreso | `OrganizacionController` (endpoints 2 a 8), `CoordinadorController` (endpoints 11 a 16) y `VoluntarioController` (endpoints 18 a 23) hechos. Faltan los demás del [resumen de endpoints](#resumen-de-endpoints). |
 | Manejo de errores (400, 404, 409)                  | Pendiente | Los códigos ya se responden; falta el formato común del cuerpo de error. Ver [Códigos de estado HTTP](#códigos-de-estado-http). |
 
 ## Estructura del proyecto
@@ -45,6 +45,7 @@ src/main/java/co/edu/autonoma/reservasapi/
 ├── controller/
 │   ├── EstadoController.java         # GET /api/estado
 │   ├── OrganizacionController.java   # /api/organizaciones
+│   ├── CoordinadorController.java    # /api/coordinadores
 │   └── VoluntarioController.java     # /api/voluntarios
 ├── dto/
 │   ├── OrganizacionRequest.java                # record: POST y PUT de organizaciones
@@ -85,6 +86,7 @@ src/main/java/co/edu/autonoma/reservasapi/
 └── service/
     ├── EstadoServicio.java           # Lógica del endpoint de estado
     ├── OrganizacionServicio.java     # Reglas y mapeo de organizaciones
+    ├── CoordinadorServicio.java      # Reglas y mapeo de coordinadores
     └── VoluntarioServicio.java       # Reglas y mapeo de voluntarios
 ```
 
@@ -121,6 +123,13 @@ Si la consola muestra `password authentication failed for user "postgres"`, la v
 | POST   | `/api/organizaciones`           | Registra una organización. 409 si el NIT o el correo ya existen. | `201` con la `OrganizacionResponse` creada              |
 | PUT    | `/api/organizaciones/{id}`      | Reemplaza los datos. 404 si no existe; 409 si el NIT o el correo pertenecen a otra. | `OrganizacionResponse`              |
 | DELETE | `/api/organizaciones/{id}`      | Elimina la organización. 409 si tiene coordinadores o actividades. | `204` sin cuerpo                                 |
+| GET    | `/api/organizaciones/{id}/coordinadores` | Lista los coordinadores de la organización. 404 si no existe. | `List<CoordinadorResponse>`                    |
+| GET    | `/api/coordinadores`            | Lista todos los coordinadores.                               | `[{"id": 1, "organizacionId": 1, "organizacionNombre": "...", ...}]` |
+| GET    | `/api/coordinadores/{id}`       | Consulta un coordinador. 404 si no existe.                   | `CoordinadorResponse`                                  |
+| GET    | `/api/coordinadores/email/{email}` | Busca un coordinador por correo. 404 si no existe.        | `CoordinadorResponse`                                  |
+| POST   | `/api/coordinadores`            | Registra un coordinador. 404 si la organización no existe; 409 si el correo ya existe. | `201` con la `CoordinadorResponse` creada |
+| PUT    | `/api/coordinadores/{id}`       | Reemplaza los datos personales, sin cambiar la organización. 404 si no existe; 409 si el correo pertenece a otro. | `CoordinadorResponse` |
+| DELETE | `/api/coordinadores/{id}`       | Elimina el coordinador. 409 si tiene actividades o asistencias. | `204` sin cuerpo                                    |
 | GET    | `/api/voluntarios`              | Lista todos los voluntarios.                                 | `[{"id": 1, "documento": "...", "nombre": "...", ...}]` |
 | GET    | `/api/voluntarios/{id}`         | Consulta un voluntario. 404 si no existe.                    | `VoluntarioResponse`                                   |
 | GET    | `/api/voluntarios/documento/{documento}` | Busca un voluntario por documento. 404 si no existe. | `VoluntarioResponse`                                   |
@@ -130,7 +139,7 @@ Si la consola muestra `password authentication failed for user "postgres"`, la v
 
 ## Contrato de la API REST
 
-Diseño de las peticiones HTTP de la API. Están implementados `GET /api/estado`, los endpoints 2 a 7 de organizaciones y los endpoints 18 a 23 de voluntarios; los demás están pendientes. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
+Diseño de las peticiones HTTP de la API. Están implementados `GET /api/estado`, los endpoints 2 a 8 de organizaciones, los endpoints 11 a 16 de coordinadores y los endpoints 18 a 23 de voluntarios; los demás están pendientes. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
 
 ### Resumen de endpoints
 
@@ -145,15 +154,15 @@ La columna Estado indica si el endpoint ya está implementado (controlador y ser
 | 5  | `POST`   | `/api/organizaciones`                                | `OrganizacionRequest`              | `OrganizacionResponse`                | 201   | Hecho     |
 | 6  | `PUT`    | `/api/organizaciones/{id}`                           | `OrganizacionRequest`              | `OrganizacionResponse`                | 200   | Hecho     |
 | 7  | `DELETE` | `/api/organizaciones/{id}`                           | —                                  | —                                     | 204   | Hecho     |
-| 8  | `GET`    | `/api/organizaciones/{id}/coordinadores`             | —                                  | `List<CoordinadorResponse>`           | 200   | Pendiente |
+| 8  | `GET`    | `/api/organizaciones/{id}/coordinadores`             | —                                  | `List<CoordinadorResponse>`           | 200   | Hecho     |
 | 9  | `GET`    | `/api/organizaciones/{id}/actividades`               | —                                  | `List<ActividadResponse>`             | 200   | Pendiente |
 | 10 | `GET`    | `/api/organizaciones/{id}/participacion`             | —                                  | `ParticipacionOrganizacionResponse`   | 200   | Pendiente |
-| 11 | `GET`    | `/api/coordinadores`                                 | —                                  | `List<CoordinadorResponse>`           | 200   | Pendiente |
-| 12 | `GET`    | `/api/coordinadores/{id}`                            | —                                  | `CoordinadorResponse`                 | 200   | Pendiente |
-| 13 | `GET`    | `/api/coordinadores/email/{email}`                   | —                                  | `CoordinadorResponse`                 | 200   | Pendiente |
-| 14 | `POST`   | `/api/coordinadores`                                 | `CoordinadorRequest`               | `CoordinadorResponse`                 | 201   | Pendiente |
-| 15 | `PUT`    | `/api/coordinadores/{id}`                            | `CoordinadorActualizacionRequest`  | `CoordinadorResponse`                 | 200   | Pendiente |
-| 16 | `DELETE` | `/api/coordinadores/{id}`                            | —                                  | —                                     | 204   | Pendiente |
+| 11 | `GET`    | `/api/coordinadores`                                 | —                                  | `List<CoordinadorResponse>`           | 200   | Hecho     |
+| 12 | `GET`    | `/api/coordinadores/{id}`                            | —                                  | `CoordinadorResponse`                 | 200   | Hecho     |
+| 13 | `GET`    | `/api/coordinadores/email/{email}`                   | —                                  | `CoordinadorResponse`                 | 200   | Hecho     |
+| 14 | `POST`   | `/api/coordinadores`                                 | `CoordinadorRequest`               | `CoordinadorResponse`                 | 201   | Hecho     |
+| 15 | `PUT`    | `/api/coordinadores/{id}`                            | `CoordinadorActualizacionRequest`  | `CoordinadorResponse`                 | 200   | Hecho     |
+| 16 | `DELETE` | `/api/coordinadores/{id}`                            | —                                  | —                                     | 204   | Hecho     |
 | 17 | `GET`    | `/api/coordinadores/{id}/actividades`                | —                                  | `List<ActividadResponse>`             | 200   | Pendiente |
 | 18 | `GET`    | `/api/voluntarios`                                   | —                                  | `List<VoluntarioResponse>`            | 200   | Hecho     |
 | 19 | `GET`    | `/api/voluntarios/{id}`                              | —                                  | `VoluntarioResponse`                  | 200   | Hecho     |
@@ -491,7 +500,7 @@ Las fechas de auditoría las asigna la propia entidad mediante callbacks de JPA;
 | Entidad              | Constructor público                                                                                  | Métodos que la modifican |
 |----------------------|------------------------------------------------------------------------------------------------------|--------------------------|
 | `OrganizacionEntity` | `(nombre, nit, email, telefono)`                                                                     | `actualizar(nombre, nit, email, telefono)` para el `PUT` |
-| `CoordinadorEntity`  | `(organizacion, nombre, apellido, email, telefono)`                                                  | Pendiente con su servicio |
+| `CoordinadorEntity`  | `(organizacion, nombre, apellido, email, telefono)`                                                  | `actualizar(nombre, apellido, email, telefono)` para el `PUT`; la organización no cambia |
 | `VoluntarioEntity`   | `(documento, nombre, apellido, email, telefono)`                                                     | `actualizar(documento, nombre, apellido, email, telefono)` para el `PUT` |
 | `ActividadEntity`    | `(coordinador, titulo, descripcion, ubicacion, fechaInicio, fechaFin, fechaCierre, cupoMaximo)`. La organización se toma del coordinador y el estado inicial es `ABIERTA`. | Pendiente con su servicio |
 | `InscripcionEntity`  | `(actividad, voluntario, claveIdempotencia)`. El estado inicial es `CONFIRMADA`.                     | Pendiente con su servicio |
@@ -527,6 +536,9 @@ Spring Data genera la consulta a partir del nombre del método, usando los atrib
 | `OrganizacionRepository` | `existsByNitAndIdNot(String, Integer)`, `existsByEmailAndIdNot(String, Integer)` | `select id from organizacion where nit = ? and id <> ?`                    | `PUT`: 409 si otra organización ya usa el valor |
 | `CoordinadorRepository`  | `findByEmail(String)`                                                      | `select ... from coordinador where email = ?`                                    | Buscar por correo |
 | `CoordinadorRepository`  | `existsByOrganizacionId(Integer)`                                          | `select id from coordinador where organizacion_id = ?`                           | `DELETE` de organización: 409 si tiene coordinadores |
+| `CoordinadorRepository`  | `existsByEmail(String)`                                                    | `select id from coordinador where email = ?`                                     | `POST`: 409 si el correo ya existe |
+| `CoordinadorRepository`  | `existsByEmailAndIdNot(String, Integer)`                                   | `select id from coordinador where email = ? and id <> ?`                         | `PUT`: 409 si otro coordinador ya usa el correo |
+| `CoordinadorRepository`  | `findByOrganizacionId(Integer)`                                            | `select ... from coordinador where organizacion_id = ?`                          | Coordinadores de una organización |
 | `VoluntarioRepository`   | `findByDocumento(String)`                                                  | `select ... from voluntario where documento = ?`                                 | Buscar por documento de identidad |
 | `VoluntarioRepository`   | `existsByDocumento(String)`, `existsByEmail(String)`                       | `select id from voluntario where documento = ?` (o `email = ?`)                  | `POST`: 409 si el valor único ya existe |
 | `VoluntarioRepository`   | `existsByDocumentoAndIdNot(String, Integer)`, `existsByEmailAndIdNot(String, Integer)` | `select id from voluntario where documento = ? and id <> ?`          | `PUT`: 409 si otro voluntario ya usa el valor |
@@ -534,11 +546,13 @@ Spring Data genera la consulta a partir del nombre del método, usando los atrib
 | `ActividadRepository`    | `countByEstado(EstadoActividad)`                                           | `select count(id) from actividad where estado = ?`                               | Contar actividades por estado |
 | `ActividadRepository`    | `findByFechaCierreAfter(LocalDateTime)`                                    | `select ... from actividad where fecha_cierre > ?`                               | RN-03: inscripción aún abierta |
 | `ActividadRepository`    | `existsByOrganizacionId(Integer)`                                          | `select id from actividad where organizacion_id = ?`                             | `DELETE` de organización: 409 si tiene actividades |
+| `ActividadRepository`    | `existsByCoordinadorId(Integer)`                                           | `select id from actividad where coordinador_id = ?`                              | `DELETE` de coordinador: 409 si tiene actividades |
 | `InscripcionRepository`  | `findByClaveIdempotencia(String)`                                          | `select ... from inscripcion where clave_idempotencia = ?`                       | RN-06: devolver la inscripción existente |
 | `InscripcionRepository`  | `countByActividadIdAndEstado(Integer, EstadoInscripcion)`                  | `select count(id) from inscripcion where actividad_id = ? and estado = ?`        | RN-01: cupos ocupados |
 | `InscripcionRepository`  | `existsByActividadIdAndVoluntarioIdAndEstado(Integer, Integer, EstadoInscripcion)` | `select id from inscripcion where actividad_id = ? and voluntario_id = ? and estado = ?` | RN-02: inscripción activa duplicada |
 | `InscripcionRepository`  | `existsByVoluntarioId(Integer)`                                            | `select id from inscripcion where voluntario_id = ?`                             | `DELETE` de voluntario: 409 si tiene inscripciones |
 | `AsistenciaRepository`   | `existsByInscripcionId(Integer)`                                           | `select id from asistencia where inscripcion_id = ?`                             | RN-04: una asistencia por inscripción |
+| `AsistenciaRepository`   | `existsByCoordinadorId(Integer)`                                           | `select id from asistencia where coordinador_id = ?`                             | `DELETE` de coordinador: 409 si tiene asistencias |
 
 En nombres como `countByActividadIdAndEstado`, `ActividadId` recorre la relación `actividad.id`; Hibernate lo resuelve con la columna `actividad_id`, sin join.
 
@@ -621,7 +635,7 @@ Lo que no se puede expresar con anotaciones de un solo campo lo valida el servic
 
 ### Mapeo entidad a respuesta
 
-La conversión de entidad a `Response` la hace un método estático `desde(entidad)` de cada `Response`, y el servicio lo llama: para listas recorre `findAll()` con un `for-each` y agrega cada `OrganizacionResponse.desde(organizacion)` a un `ArrayList`; para un solo registro llama directamente a `OrganizacionResponse.desde(organizacion)`. Por ahora lo tienen `OrganizacionResponse` y `VoluntarioResponse`; las demás lo recibirán junto con su servicio.
+La conversión de entidad a `Response` la hace un método estático `desde(entidad)` de cada `Response`, y el servicio lo llama: para listas recorre `findAll()` con un `for-each` y agrega cada `OrganizacionResponse.desde(organizacion)` a un `ArrayList`; para un solo registro llama directamente a `OrganizacionResponse.desde(organizacion)`. Por ahora lo tienen `OrganizacionResponse`, `CoordinadorResponse` y `VoluntarioResponse`; las demás lo recibirán junto con su servicio.
 
 El servicio no usa `@Transactional`. Las relaciones `@ManyToOne` son `LAZY` (ver [Relaciones `@ManyToOne`](#relaciones-manytoone)), y leer `actividad.getCoordinador().getNombre()` funciona porque Spring Boot activa por defecto `spring.jpa.open-in-view`: la sesión de Hibernate queda abierta durante toda la petición HTTP. Fuera de una petición, esa misma lectura lanza `LazyInitializationException`.
 
@@ -649,7 +663,23 @@ Cada recurso tiene un `@Service` en `service/` (sufijo `Servicio`) y un `@RestCo
 | `actualizarOrganizacion(...)` | `PUT /api/organizaciones/{id}`   | 404 si no existe; 409 si el `nit` o el `email` pertenecen a otra organización.          |
 | `eliminarOrganizacion(id)` | `DELETE /api/organizaciones/{id}`   | 404 si no existe; 409 si tiene coordinadores o actividades (eliminación física).        |
 
-Los endpoints 8 a 10 (`/coordinadores`, `/actividades` y `/participacion` de una organización) quedan pendientes: devuelven `CoordinadorResponse`, `ActividadResponse` y el resumen de participación, cuyo mapeo pertenece a los servicios de esas entidades.
+El endpoint 8 (`/coordinadores` de una organización) está en `OrganizacionController` y delega en `CoordinadorServicio` (ver [Coordinadores](#coordinadores)). Los endpoints 9 y 10 (`/actividades` y `/participacion` de una organización) quedan pendientes: devuelven `ActividadResponse` y el resumen de participación, cuyo mapeo pertenece a los servicios de esas entidades.
+
+### Coordinadores
+
+`CoordinadorController` y `CoordinadorServicio` implementan los endpoints 11 a 16 del [resumen de endpoints](#resumen-de-endpoints). `CoordinadorServicio` también atiende el endpoint 8.
+
+| Método del servicio        | Endpoint                                 | Regla                                                                                   |
+|----------------------------|------------------------------------------|-----------------------------------------------------------------------------------------|
+| `listarCoordinadores()`    | `GET /api/coordinadores`                 | —                                                                                       |
+| `listarPorOrganizacion(organizacionId)` | `GET /api/organizaciones/{id}/coordinadores` | 404 si la organización no existe.                                          |
+| `consultarCoordinador(id)` | `GET /api/coordinadores/{id}`            | 404 si no existe.                                                                       |
+| `consultarPorEmail(email)` | `GET /api/coordinadores/email/{email}`   | 404 si no existe.                                                                       |
+| `crearCoordinador(...)`    | `POST /api/coordinadores`                | 404 si la organización no existe; 409 si el `email` ya existe.                          |
+| `actualizarCoordinador(...)` | `PUT /api/coordinadores/{id}`          | 404 si no existe; 409 si el `email` pertenece a otro coordinador. No cambia la organización. |
+| `eliminarCoordinador(id)`  | `DELETE /api/coordinadores/{id}`         | 404 si no existe; 409 si tiene actividades o asistencias (eliminación física).          |
+
+El endpoint 17 (`/actividades` de un coordinador) queda pendiente: devuelve `ActividadResponse`, cuyo mapeo pertenece al servicio de actividades.
 
 ### Voluntarios
 
