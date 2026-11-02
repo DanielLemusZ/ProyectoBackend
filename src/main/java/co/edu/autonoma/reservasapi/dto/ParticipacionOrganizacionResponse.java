@@ -1,5 +1,6 @@
 package co.edu.autonoma.reservasapi.dto;
 
+import co.edu.autonoma.reservasapi.entity.OrganizacionEntity;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -34,5 +35,31 @@ public class ParticipacionOrganizacionResponse
         this.totalAsistencias = totalAsistencias;
         this.totalHoras = totalHoras;
         this.actividades = actividades;
+    }
+
+    // Conversión de la entidad a la respuesta; los totales se suman a partir de las filas por actividad
+    public static ParticipacionOrganizacionResponse desde(OrganizacionEntity organizacion,
+                                                          List<ParticipacionActividadResponse> actividades)
+    {
+        long totalInscripcionesConfirmadas = 0;
+        long totalAsistencias = 0;
+        BigDecimal totalHoras = new BigDecimal("0.00");
+
+        for (ParticipacionActividadResponse actividad : actividades)
+        {
+            totalInscripcionesConfirmadas += actividad.getInscripcionesConfirmadas();
+            totalAsistencias += actividad.getAsistencias();
+            totalHoras = totalHoras.add(actividad.getHoras());
+        }
+
+        return new ParticipacionOrganizacionResponse(
+                organizacion.getId(),
+                organizacion.getNombre(),
+                actividades.size(),
+                totalInscripcionesConfirmadas,
+                totalAsistencias,
+                totalHoras,
+                actividades
+        );
     }
 }

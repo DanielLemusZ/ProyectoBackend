@@ -259,8 +259,9 @@ public class ActividadServicio
         return estado == EstadoActividad.CANCELADA || estado == EstadoActividad.FINALIZADA;
     }
 
-    // RN-03: una actividad ABIERTA cuya fecha de cierre ya pasó pasa a CERRADA al consultarla
-    private void aplicarCierrePorFecha(ActividadEntity actividad)
+    // RN-03: una actividad ABIERTA cuya fecha de cierre ya pasó pasa a CERRADA al consultarla.
+    // Es público porque la participación de una organización también consulta actividades.
+    public void aplicarCierrePorFecha(ActividadEntity actividad)
     {
         if (actividad.getEstado() == EstadoActividad.ABIERTA
                 && LocalDateTime.now().isAfter(actividad.getFechaCierre()))

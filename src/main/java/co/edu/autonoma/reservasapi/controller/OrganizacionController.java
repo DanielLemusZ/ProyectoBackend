@@ -4,6 +4,7 @@ import co.edu.autonoma.reservasapi.dto.ActividadResponse;
 import co.edu.autonoma.reservasapi.dto.CoordinadorResponse;
 import co.edu.autonoma.reservasapi.dto.OrganizacionRequest;
 import co.edu.autonoma.reservasapi.dto.OrganizacionResponse;
+import co.edu.autonoma.reservasapi.dto.ParticipacionOrganizacionResponse;
 import co.edu.autonoma.reservasapi.service.ActividadServicio;
 import co.edu.autonoma.reservasapi.service.CoordinadorServicio;
 import co.edu.autonoma.reservasapi.service.OrganizacionServicio;
@@ -80,5 +81,11 @@ public class OrganizacionController
     public List<ActividadResponse> listarActividades(@PathVariable Integer id)
     {
         return actividadServicio.listarPorOrganizacion(id);
+    }
+
+    @GetMapping("/{id}/participacion")
+    public ParticipacionOrganizacionResponse consultarParticipacion(@PathVariable Integer id)
+    {
+        return organizacionServicio.consultarParticipacion(id);
     }
 }

@@ -33,8 +33,8 @@ Seguimiento de lo implementado y lo pendiente. Actualizar esta tabla con cada av
 | Contrato de la API REST                            | Hecho     | Ver [Contrato de la API REST](#contrato-de-la-api-rest).             |
 | DTOs de petición y respuesta                       | Hecho     | Ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta).   |
 | Lombok en entidades, `Response` e inyección de dependencias | Hecho | Entidades sin setters, `Response` inmutables y `@RequiredArgsConstructor` en servicios y controladores. Ver [Convenciones del código](#convenciones-del-código). |
-| Servicios con reglas de negocio (RN-01 a RN-06)    | En progreso | `OrganizacionServicio`, `CoordinadorServicio`, `VoluntarioServicio`, `ActividadServicio`, `InscripcionServicio` y `AsistenciaServicio` hechos. Falta la participación (endpoint 10). Ver [Servicios y controladores](#servicios-y-controladores). |
-| Controladores del contrato HTTP                    | En progreso | `OrganizacionController` (endpoints 2 a 9), `CoordinadorController` (endpoints 11 a 17), `VoluntarioController` (endpoints 18 a 25), `ActividadController` (endpoints 26 a 33), `InscripcionController` (endpoints 34 a 38) y `AsistenciaController` (endpoints 39 a 42) hechos. Falta el endpoint 10 del [resumen de endpoints](#resumen-de-endpoints). |
+| Servicios con reglas de negocio (RN-01 a RN-06)    | Hecho | `OrganizacionServicio`, `CoordinadorServicio`, `VoluntarioServicio`, `ActividadServicio`, `InscripcionServicio` y `AsistenciaServicio`. Ver [Servicios y controladores](#servicios-y-controladores). |
+| Controladores del contrato HTTP                    | Hecho | `OrganizacionController` (endpoints 2 a 10), `CoordinadorController` (endpoints 11 a 17), `VoluntarioController` (endpoints 18 a 25), `ActividadController` (endpoints 26 a 33), `InscripcionController` (endpoints 34 a 38) y `AsistenciaController` (endpoints 39 a 42). Ver [resumen de endpoints](#resumen-de-endpoints). |
 | Manejo de errores (400, 404, 409)                  | Pendiente | Los códigos ya se responden; falta el formato común del cuerpo de error. Ver [Códigos de estado HTTP](#códigos-de-estado-http). |
 
 ## Estructura del proyecto
@@ -88,7 +88,7 @@ src/main/java/co/edu/autonoma/reservasapi/
 │   └── AsistenciaRepository.java     # JpaRepository<AsistenciaEntity, Integer>
 └── service/
     ├── EstadoServicio.java           # Lógica del endpoint de estado
-    ├── OrganizacionServicio.java     # Reglas y mapeo de organizaciones
+    ├── OrganizacionServicio.java     # Reglas, mapeo y participación de organizaciones
     ├── CoordinadorServicio.java      # Reglas y mapeo de coordinadores
     ├── VoluntarioServicio.java       # Reglas y mapeo de voluntarios
     ├── ActividadServicio.java        # Reglas, transiciones de estado y mapeo de actividades
@@ -143,6 +143,7 @@ Si la consola muestra `password authentication failed for user "postgres"`, la v
 | PUT    | `/api/voluntarios/{id}`         | Reemplaza los datos. 404 si no existe; 409 si el documento o el correo pertenecen a otro. | `VoluntarioResponse`       |
 | DELETE | `/api/voluntarios/{id}`         | Elimina el voluntario. 409 si tiene inscripciones en cualquier estado. | `204` sin cuerpo                             |
 | GET    | `/api/organizaciones/{id}/actividades` | Lista las actividades de la organización, en cualquier estado. 404 si no existe. | `List<ActividadResponse>`          |
+| GET    | `/api/organizaciones/{id}/participacion` | Resume inscripciones, asistencias y horas por actividad, con totales. 404 si no existe. | `ParticipacionOrganizacionResponse` |
 | GET    | `/api/coordinadores/{id}/actividades` | Lista las actividades del coordinador, en cualquier estado. 404 si no existe. | `List<ActividadResponse>`               |
 | GET    | `/api/actividades?estado={estado}` | Sin filtro lista las abiertas a inscripción; con filtro, las de ese estado. 400 si el estado no es válido. | `List<ActividadResponse>` |
 | GET    | `/api/actividades/{id}`         | Consulta una actividad con sus cupos. 404 si no existe.      | `ActividadResponse`                                    |
@@ -166,7 +167,7 @@ Si la consola muestra `password authentication failed for user "postgres"`, la v
 
 ## Contrato de la API REST
 
-Diseño de las peticiones HTTP de la API. Están implementados `GET /api/estado`, los endpoints 2 a 9 de organizaciones, los endpoints 11 a 17 de coordinadores, los endpoints 18 a 25 de voluntarios, los endpoints 26 a 33 de actividades, los endpoints 34 a 38 de inscripciones y los endpoints 39 a 42 de asistencias. Solo queda pendiente el endpoint 10. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
+Diseño de las peticiones HTTP de la API. Están implementados todos los endpoints: `GET /api/estado`, los endpoints 2 a 10 de organizaciones, los endpoints 11 a 17 de coordinadores, los endpoints 18 a 25 de voluntarios, los endpoints 26 a 33 de actividades, los endpoints 34 a 38 de inscripciones y los endpoints 39 a 42 de asistencias. Los DTOs que reciben y devuelven ya existen (ver [DTOs de petición y respuesta](#dtos-de-petición-y-respuesta)).
 
 ### Resumen de endpoints
 
@@ -183,7 +184,7 @@ La columna Estado indica si el endpoint ya está implementado (controlador y ser
 | 7  | `DELETE` | `/api/organizaciones/{id}`                           | —                                  | —                                     | 204   | Hecho     |
 | 8  | `GET`    | `/api/organizaciones/{id}/coordinadores`             | —                                  | `List<CoordinadorResponse>`           | 200   | Hecho     |
 | 9  | `GET`    | `/api/organizaciones/{id}/actividades`               | —                                  | `List<ActividadResponse>`             | 200   | Hecho     |
-| 10 | `GET`    | `/api/organizaciones/{id}/participacion`             | —                                  | `ParticipacionOrganizacionResponse`   | 200   | Pendiente |
+| 10 | `GET`    | `/api/organizaciones/{id}/participacion`             | —                                  | `ParticipacionOrganizacionResponse`   | 200   | Hecho     |
 | 11 | `GET`    | `/api/coordinadores`                                 | —                                  | `List<CoordinadorResponse>`           | 200   | Hecho     |
 | 12 | `GET`    | `/api/coordinadores/{id}`                            | —                                  | `CoordinadorResponse`                 | 200   | Hecho     |
 | 13 | `GET`    | `/api/coordinadores/email/{email}`                   | —                                  | `CoordinadorResponse`                 | 200   | Hecho     |
@@ -670,7 +671,7 @@ Lo que no se puede expresar con anotaciones de un solo campo lo valida el servic
 
 ### Mapeo entidad a respuesta
 
-La conversión de entidad a `Response` la hace un método estático `desde(entidad)` de cada `Response`, y el servicio lo llama: para listas recorre `findAll()` con un `for-each` y agrega cada `OrganizacionResponse.desde(organizacion)` a un `ArrayList`; para un solo registro llama directamente a `OrganizacionResponse.desde(organizacion)`. Lo tienen `OrganizacionResponse`, `CoordinadorResponse`, `VoluntarioResponse`, `ActividadResponse`, `InscripcionResponse` y `AsistenciaResponse`. Las respuestas de participación quedan pendientes junto con el endpoint 10. `ActividadResponse` recibe además los cupos ocupados (`desde(actividad, cuposOcupados)`), porque los cuenta el servicio y la entidad no tiene sus inscripciones.
+La conversión de entidad a `Response` la hace un método estático `desde(entidad)` de cada `Response`, y el servicio lo llama: para listas recorre `findAll()` con un `for-each` y agrega cada `OrganizacionResponse.desde(organizacion)` a un `ArrayList`; para un solo registro llama directamente a `OrganizacionResponse.desde(organizacion)`. Lo tienen `OrganizacionResponse`, `CoordinadorResponse`, `VoluntarioResponse`, `ActividadResponse`, `InscripcionResponse` y `AsistenciaResponse`. `ParticipacionActividadResponse` y `ParticipacionOrganizacionResponse` también lo tienen: la primera recibe los conteos y las horas que calcula el servicio, y la segunda suma los totales a partir de esas filas. `ActividadResponse` recibe además los cupos ocupados (`desde(actividad, cuposOcupados)`), porque los cuenta el servicio y la entidad no tiene sus inscripciones.
 
 El servicio no usa `@Transactional`. Las relaciones `@ManyToOne` son `LAZY` (ver [Relaciones `@ManyToOne`](#relaciones-manytoone)), y leer `actividad.getCoordinador().getNombre()` funciona porque Spring Boot activa por defecto `spring.jpa.open-in-view`: la sesión de Hibernate queda abierta durante toda la petición HTTP. Fuera de una petición, esa misma lectura lanza `LazyInitializationException`.
 
@@ -687,7 +688,7 @@ Cada recurso tiene un `@Service` en `service/` (sufijo `Servicio`) y un `@RestCo
 
 ### Organizaciones
 
-`OrganizacionController` y `OrganizacionServicio` implementan los endpoints 2 a 7 del [resumen de endpoints](#resumen-de-endpoints).
+`OrganizacionController` y `OrganizacionServicio` implementan los endpoints 2 a 7 y 10 del [resumen de endpoints](#resumen-de-endpoints).
 
 | Método del servicio        | Endpoint                            | Regla                                                                                   |
 |----------------------------|-------------------------------------|-----------------------------------------------------------------------------------------|
@@ -697,8 +698,11 @@ Cada recurso tiene un `@Service` en `service/` (sufijo `Servicio`) y un `@RestCo
 | `crearOrganizacion(...)`   | `POST /api/organizaciones`          | 409 si el `nit` o el `email` ya existen.                                                |
 | `actualizarOrganizacion(...)` | `PUT /api/organizaciones/{id}`   | 404 si no existe; 409 si el `nit` o el `email` pertenecen a otra organización.          |
 | `eliminarOrganizacion(id)` | `DELETE /api/organizaciones/{id}`   | 404 si no existe; 409 si tiene coordinadores o actividades (eliminación física).        |
+| `consultarParticipacion(id)` | `GET /api/organizaciones/{id}/participacion` | 404 si no existe. Incluye todas sus actividades, en cualquier estado.         |
 
-El endpoint 8 (`/coordinadores` de una organización) está en `OrganizacionController` y delega en `CoordinadorServicio` (ver [Coordinadores](#coordinadores)). El endpoint 9 (`/actividades` de una organización) también está en `OrganizacionController` y delega en `ActividadServicio` (ver [Actividades](#actividades)). El endpoint 10 (`/participacion` de una organización) queda pendiente: resume datos de actividades, inscripciones y asistencias.
+El endpoint 8 (`/coordinadores` de una organización) está en `OrganizacionController` y delega en `CoordinadorServicio` (ver [Coordinadores](#coordinadores)). El endpoint 9 (`/actividades` de una organización) también está en `OrganizacionController` y delega en `ActividadServicio` (ver [Actividades](#actividades)). 
+
+**Participación (endpoint 10):** por cada actividad de la organización cuenta las inscripciones `CONFIRMADA` y las asistencias, y suma las horas con un `for-each`. Los totales se suman a partir de esas filas. Una actividad sin asistencias muestra `0.00` horas, y las `CANCELADA` también aparecen, con `0` inscripciones confirmadas. Como es una consulta de actividades, aplica antes el [cierre por fecha](#actividades).
 
 ### Coordinadores
 
@@ -758,7 +762,7 @@ Las validaciones siguen el orden cuerpo (400), existencia (404) y conflicto (409
 
 Cualquier otra transición responde 409, incluido pedir el estado que la actividad ya tiene. `CANCELADA` y `FINALIZADA` son estados finales.
 
-**Cierre por fecha (RN-03):** al consultar actividades (individual, listas y rutas anidadas), las `ABIERTA` cuya `fechaCierre` ya pasó se guardan como `CERRADA` antes de responder. En `GET /api/actividades` esto ocurre antes de filtrar, para que el filtro por estado vea el estado real.
+**Cierre por fecha (RN-03):** al consultar actividades (individual, listas, rutas anidadas y participación de una organización), las `ABIERTA` cuya `fechaCierre` ya pasó se guardan como `CERRADA` antes de responder. En `GET /api/actividades` esto ocurre antes de filtrar, para que el filtro por estado vea el estado real.
 
 **Cancelación (`DELETE`):** es lógica. La actividad pasa a `CANCELADA` y sus inscripciones `CONFIRMADA` pasan a `CANCELADA` con `fechaCancelacion`. Como los servicios no usan `@Transactional`, cada guardado es independiente: se cancelan primero las inscripciones y al final la actividad. Si algo falla a mitad de camino, la actividad sigue sin cancelar y repetir el `DELETE` completa las inscripciones que falten.
 
