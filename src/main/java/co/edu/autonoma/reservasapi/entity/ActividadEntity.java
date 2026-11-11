@@ -93,6 +93,30 @@ public class ActividadEntity
         this.cupoMaximo = cupoMaximo;
     }
 
+    // PUT reemplaza los campos editables; el coordinador y la organización no cambian
+    public void actualizar(String titulo,
+                           String descripcion,
+                           String ubicacion,
+                           LocalDateTime fechaInicio,
+                           LocalDateTime fechaFin,
+                           LocalDateTime fechaCierre,
+                           Integer cupoMaximo)
+    {
+        this.titulo = titulo;
+        this.descripcion = descripcion;
+        this.ubicacion = ubicacion;
+        this.fechaInicio = fechaInicio;
+        this.fechaFin = fechaFin;
+        this.fechaCierre = fechaCierre;
+        this.cupoMaximo = cupoMaximo;
+    }
+
+    // Las transiciones permitidas las valida el servicio
+    public void cambiarEstado(EstadoActividad estado)
+    {
+        this.estado = estado;
+    }
+
     @PrePersist
     protected void alCrear()
     {

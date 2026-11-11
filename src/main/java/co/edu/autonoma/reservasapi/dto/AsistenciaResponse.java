@@ -1,5 +1,9 @@
 package co.edu.autonoma.reservasapi.dto;
 
+import co.edu.autonoma.reservasapi.entity.AsistenciaEntity;
+import co.edu.autonoma.reservasapi.entity.CoordinadorEntity;
+import co.edu.autonoma.reservasapi.entity.InscripcionEntity;
+import co.edu.autonoma.reservasapi.entity.VoluntarioEntity;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -47,5 +51,28 @@ public class AsistenciaResponse
         this.horas = horas;
         this.observaciones = observaciones;
         this.fechaRegistro = fechaRegistro;
+    }
+
+    // Conversión de la entidad a la respuesta; la usa AsistenciaServicio.
+    // La actividad y el voluntario se alcanzan a través de la inscripción.
+    public static AsistenciaResponse desde(AsistenciaEntity asistencia)
+    {
+        InscripcionEntity inscripcion = asistencia.getInscripcion();
+        VoluntarioEntity voluntario = inscripcion.getVoluntario();
+        CoordinadorEntity coordinador = asistencia.getCoordinador();
+
+        return new AsistenciaResponse(
+                asistencia.getId(),
+                inscripcion.getId(),
+                inscripcion.getActividad().getId(),
+                inscripcion.getActividad().getTitulo(),
+                voluntario.getId(),
+                voluntario.getNombre() + " " + voluntario.getApellido(),
+                coordinador.getId(),
+                coordinador.getNombre() + " " + coordinador.getApellido(),
+                asistencia.getHoras(),
+                asistencia.getObservaciones(),
+                asistencia.getFechaRegistro()
+        );
     }
 }

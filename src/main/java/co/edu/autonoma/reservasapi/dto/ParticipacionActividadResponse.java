@@ -1,5 +1,6 @@
 package co.edu.autonoma.reservasapi.dto;
 
+import co.edu.autonoma.reservasapi.entity.ActividadEntity;
 import co.edu.autonoma.reservasapi.entity.EstadoActividad;
 import lombok.Getter;
 
@@ -34,5 +35,22 @@ public class ParticipacionActividadResponse
         this.inscripcionesConfirmadas = inscripcionesConfirmadas;
         this.asistencias = asistencias;
         this.horas = horas;
+    }
+
+    // Conversión de la entidad a la fila; los conteos y las horas los calcula OrganizacionServicio
+    public static ParticipacionActividadResponse desde(ActividadEntity actividad,
+                                                       long inscripcionesConfirmadas,
+                                                       long asistencias,
+                                                       BigDecimal horas)
+    {
+        return new ParticipacionActividadResponse(
+                actividad.getId(),
+                actividad.getTitulo(),
+                actividad.getEstado(),
+                actividad.getCupoMaximo(),
+                inscripcionesConfirmadas,
+                asistencias,
+                horas
+        );
     }
 }

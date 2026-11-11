@@ -59,6 +59,13 @@ public class AsistenciaEntity
         this.observaciones = observaciones;
     }
 
+    // PUT corrige los datos del registro; la inscripción y el coordinador no cambian
+    public void actualizar(BigDecimal horas, String observaciones)
+    {
+        this.horas = horas;
+        this.observaciones = observaciones;
+    }
+
     @PrePersist
     protected void alCrear()
     {

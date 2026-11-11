@@ -61,6 +61,13 @@ public class InscripcionEntity
         this.claveIdempotencia = claveIdempotencia;
     }
 
+    // Cancelación lógica: la inscripción se conserva por trazabilidad
+    public void cancelar()
+    {
+        this.estado = EstadoInscripcion.CANCELADA;
+        this.fechaCancelacion = LocalDateTime.now();
+    }
+
     @PrePersist
     protected void alCrear()
     {

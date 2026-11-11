@@ -15,5 +15,14 @@ public interface ActividadRepository extends JpaRepository<ActividadEntity, Inte
 
     List<ActividadEntity> findByFechaCierreAfter(LocalDateTime fecha);
 
+    // RN-03: actividades que siguen en un estado cuya fecha de cierre ya pasó
+    List<ActividadEntity> findByEstadoAndFechaCierreBefore(EstadoActividad estado, LocalDateTime fecha);
+
+    List<ActividadEntity> findByOrganizacionId(Integer organizacionId);
+
+    List<ActividadEntity> findByCoordinadorId(Integer coordinadorId);
+
     boolean existsByOrganizacionId(Integer organizacionId);
+
+    boolean existsByCoordinadorId(Integer coordinadorId);
 }

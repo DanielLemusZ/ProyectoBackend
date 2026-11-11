@@ -1,5 +1,6 @@
 package co.edu.autonoma.reservasapi.dto;
 
+import co.edu.autonoma.reservasapi.entity.VoluntarioEntity;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -33,5 +34,19 @@ public class VoluntarioResponse
         this.email = email;
         this.telefono = telefono;
         this.fechaCreacion = fechaCreacion;
+    }
+
+    // Conversión de la entidad a la respuesta; la usa VoluntarioServicio
+    public static VoluntarioResponse desde(VoluntarioEntity voluntario)
+    {
+        return new VoluntarioResponse(
+                voluntario.getId(),
+                voluntario.getDocumento(),
+                voluntario.getNombre(),
+                voluntario.getApellido(),
+                voluntario.getEmail(),
+                voluntario.getTelefono(),
+                voluntario.getFechaCreacion()
+        );
     }
 }
